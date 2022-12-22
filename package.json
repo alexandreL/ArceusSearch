@@ -10,11 +10,14 @@
   },
   "dependencies": {
     "@next/font": "13.0.7",
+    "axios": "^1.2.1",
+    "cheerio": "^1.0.0-rc.12",
     "daisyui": "^2.46.0",
     "next": "13.0.7",
     "react": "18.2.0",
     "react-dom": "18.2.0",
-    "sass": "^1.57.1",
+    "socket.io": "^4.5.4",
+    "socket.io-client": "^4.5.4",
     "typescript": "4.9.4"
   },
   "devDependencies": {
@@ -25,6 +28,7 @@
     "eslint": "8.30.0",
     "eslint-config-next": "13.0.7",
     "postcss": "^8.4.20",
+    "sass": "^1.57.1",
     "scss": "^0.2.4",
     "tailwindcss": "^3.2.4"
   }

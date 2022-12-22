@@ -35,7 +35,6 @@ export default function Calculator(props: ICalculeProps) {
     useEffect(() => {
         setQuery(props.query)
         setResult(processQuery(props.query))
-        console.log('query', props.query)
     }, [ props ])
 
     if (hasCalculation) {

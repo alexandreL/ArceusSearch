@@ -1,47 +1,74 @@
 import Head from 'next/head'
 import { useRouter } from 'next/router'
-import { useState } from 'react'
-import Calculator from '../component/calcule'
-import Result, { ResultProps } from '../component/result'
+import { useState, useEffect } from 'react'
+import Calculator from '../components/elements/calcule'
+import Result, { ResultProps } from '../components/elements/result'
+import { io, Socket } from 'socket.io-client'
 
-const data: Array<ResultProps> = [ {
-    title: 'google',
-    description: 'djkbfasfbsdj',
-    url: 'http://google.com',
-}, {
-    title: 'bing',
-    description: 'djkbfasfbsdj',
-    url: 'http://bing.com',
-}, {
-    title: 'yahoo',
-    description: 'djkbfasfbsdj',
-    url: 'http://yahoo.com',
-}, {
-    title: 'duckduckgo',
-    description: 'djkbfasfbsdj',
-    url: 'http://duckduckgo.com',
-}, {
-    title: 'yandex',
-    description: 'djkbfasfbsdj',
-    url: 'http://yandex.com',
-}, {
-    title: 'baidu',
-    description: 'djkbfasfbsdj',
-    url: 'http://baidu.com',
-}
-]
+const coolDown = 500
+let lastCall = 0
+let timeout: NodeJS.Timeout
 
 export default function Home() {
     const router = useRouter()
-    const [ query, setQuery ] = useState()
+    let socket: Socket<any>
+    let { q } = router.query
+    if (Array.isArray(q)) q = q[0]
+    const [ query, setQuery ] = useState(q || '')
+    const [ results, setResults ] = useState<Array<ResultProps>>([])
 
-    // if input clic enter send to search page
-    const handleKeyPress = (e: any) => {
-        setQuery(e.target.value)
-        if (e.key === 'Enter') {
-            router.push(`/search?q=${ query }`)
+    const getResults = async () => {
+        if (query && query.length > 0) {
+            fetch('/api/search?query=' + query).then(res => res.json()).then(data => {
+                setResults(data)
+            }).catch(err => console.error(err))
         }
     }
+
+    const socketInitializer = async () => {
+        await fetch('/api/socket')
+        socket = io()
+
+        socket.on('connect', () => {
+        })
+    }
+
+    useEffect(() => {
+        socketInitializer().catch(e => console.error(e))
+        getResults().catch(e => console.error(e))
+    }, [])
+
+
+    useEffect(() => {
+        getResults().catch(e => console.error(e))
+    }, [ router.query.q ])
+
+    // coolDown wait for the user to stop typing
+    const handleSearchDebounced = (query: string) => {
+        if (timeout) {
+            clearTimeout(timeout)
+        }
+        timeout = setTimeout(() => {
+            router.push(`/?q=${ query }`)
+        }, coolDown)
+    }
+
+    const handleKeyPress = (e: any) => {
+        setQuery(e.target.value)
+        socket?.emit('query', e.target.value)
+        handleSearchDebounced(e.target.value)
+        if (e.key === 'Enter') { // todo ======================== marche pas
+            console.log('enter press here! ')
+            if (query && query.length > 0) {
+                if (query == e.target.value)
+                    return getResults().catch(e => console.error(e))
+                router.push(`/?q=${ query }`)
+            } else {
+                // rest all page
+            }
+        }
+    }
+
     return (
         <>
             <Head>
@@ -61,23 +88,26 @@ export default function Home() {
                             <Calculator query={ query }/></div>
                     </div>
                 </div>
-                <div className="flex w-full">
-                    <div className="grid flex-grow">
-                        <Result key={ -1 } title={ "ca" } description={ "asdsa" } url={ 'sadf' }/>
-                        { data.map((item, index) => {
+                <div className="flex w-full grid-flow-row-dense pt-1">
+                    <div className="flex-grow pl-1">
+                        { results.map((item, index) => {
                             return (
-                                <Result key={ index } title={ item.title } description={ item.description } url={ item.url }/>
+                                <Result key={ index }
+                                        title={ item.title }
+                                        description={ item.description }
+                                        url={ item.url }
+                                        displayUrl={ item.displayUrl }/>
                             )
                         }) }
 
                     </div>
                     <div className="divider divider-horizontal"></div>
-                    <div className="grid flex-grow">
-                        { data.map((item, index) => {
-                            return (
-                                <Result key={ index } title={ item.title } description={ item.description } url={ item.url }/>
-                            )
-                        }) }
+                    <div className="flex-grow ">
+                        <Result key={ 1 }
+                                title={ 'No data' }
+                                description={ '' }
+                                url={ '' }
+                                displayUrl={ '' }/>
                     </div>
                 </div>
             </main>
