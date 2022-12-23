@@ -4,7 +4,7 @@ import { ResultProps } from '../../components/elements/result'
 import { load } from 'cheerio'
 
 const getOrganicData = async (query: string) => {
-    console.log('getOrganicData')
+    console.log('getOrganicData', query)
     const result = await fetch(`https://www.google.com/search?q=${ query }&oq=${ query }&sourceid=chrome&ie=UTF-8`, {
         'headers': {
             'accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9',
@@ -49,8 +49,8 @@ const getOrganicData = async (query: string) => {
         organicResult.url = $(nodes[i]).find('a').attr('href') ?? ''
         organicResult.description = $(nodes[i]).find('div:nth-child(1) > div:nth-child(2) > div:nth-child(1) > div:nth-child(1) > div:nth-child(1) > div:nth-child(1) > div:nth-child(1)').text()
         organicResult.displayUrl = $(nodes[i]).find('div:nth-child(1) > div:nth-child(1) > a:nth-child(1) > div:nth-child(1) > div:nth-child(2) > div:nth-child(1)').text()
-        console.log(organicResult)
         if (organicResult.url !== '' && organicResult.title !== '') {
+            organicResult.url = organicResult.url.replace('/url?q=', '')
             organicResults.push(organicResult)
         }
     }

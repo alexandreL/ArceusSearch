@@ -4,20 +4,25 @@ import { useState, useEffect } from 'react'
 import Calculator from '../components/elements/calcule'
 import Result, { ResultProps } from '../components/elements/result'
 import { io, Socket } from 'socket.io-client'
+import useDebounce from '../components/utils/debouce'
 
 const coolDown = 500
-let lastCall = 0
 let timeout: NodeJS.Timeout
 
-export default function Home() {
+export interface HomeProps {
+    results: ResultProps[]
+}
+
+function Home(props: HomeProps) {
     const router = useRouter()
     let socket: Socket<any>
     let { q } = router.query
     if (Array.isArray(q)) q = q[0]
     const [ query, setQuery ] = useState(q || '')
-    const [ results, setResults ] = useState<Array<ResultProps>>([])
+    const [ results, setResults ] = useState<Array<ResultProps>>(props.results || [])
+    const debouncedSearch = useDebounce(query, 500)
 
-    const getResults = async () => {
+    const getResults = () => {
         if (query && query.length > 0) {
             fetch('/api/search?query=' + query).then(res => res.json()).then(data => {
                 setResults(data)
@@ -25,44 +30,49 @@ export default function Home() {
         }
     }
 
-    const socketInitializer = async () => {
-        await fetch('/api/socket')
-        socket = io()
-
-        socket.on('connect', () => {
-        })
-    }
-
     useEffect(() => {
-        socketInitializer().catch(e => console.error(e))
-        getResults().catch(e => console.error(e))
-    }, [])
-
-
-    useEffect(() => {
-        getResults().catch(e => console.error(e))
-    }, [ router.query.q ])
-
-    // coolDown wait for the user to stop typing
-    const handleSearchDebounced = (query: string) => {
-        if (timeout) {
-            clearTimeout(timeout)
+        if (debouncedSearch) {
+            getResults()
         }
-        timeout = setTimeout(() => {
-            router.push(`/?q=${ query }`)
-        }, coolDown)
+    }, [ debouncedSearch ])
+
+    {
+        const socketInitializer = async () => {
+            await fetch('/api/socket')
+            socket = io()
+
+            socket.on('connect', () => {
+            })
+        }
+
+        useEffect(() => {
+            socketInitializer().catch(e => console.error(e))
+        }, [])
     }
 
-    const handleKeyPress = (e: any) => {
+    const handleInput = (e: any) => {
         setQuery(e.target.value)
         socket?.emit('query', e.target.value)
-        handleSearchDebounced(e.target.value)
         if (e.key === 'Enter') { // todo ======================== marche pas
+            /*
+                        console.log('enter press here! ')
+                        if (query && query.length > 0) {
+                            if (query == e.target.value)
+                                return getResults().catch(e => console.error(e))
+                            router.push(`/?q=${ query }`)
+                        } else {
+                            // rest all page
+                        }
+            */
+        }
+    }
+
+    const handleKeyDown = (e: any) => {
+        if (e.key === 'Enter') {
             console.log('enter press here! ')
             if (query && query.length > 0) {
                 if (query == e.target.value)
-                    return getResults().catch(e => console.error(e))
-                router.push(`/?q=${ query }`)
+                    return getResults()
             } else {
                 // rest all page
             }
@@ -82,7 +92,7 @@ export default function Home() {
                     <div className="text-center">
                         <div className="hero-content mx-auto md:max-w-full">
                             <input autoFocus name="search" type="text" placeholder="Search" className="input input-bordered w-full max-w-xl"
-                                   value={ query } onInput={ handleKeyPress }/>
+                                   value={ query } onInput={ handleInput } onKeyDown={ handleKeyDown }/>
 
                             {/*<button className="btn" onClick={ handleClick }>Go</button>*/ }
                             <Calculator query={ query }/></div>
@@ -114,3 +124,20 @@ export default function Home() {
         </>
     )
 }
+
+Home.getInitialProps = async (context: any) => {
+    if (context.query?.q) {
+        const res = await fetch(`http://localhost:3000/api/search?query=XX${ context.query.q }`)
+        const data = await res.json()
+        if (!data) {
+            return {}
+        }
+        return {
+            results: data
+        }
+    } else {
+        return {}
+    }
+}
+
+export default Home
