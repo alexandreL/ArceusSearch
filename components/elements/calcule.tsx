@@ -2,27 +2,27 @@ import { useState, useEffect } from 'react'
 
 interface ICalculeProps {
     query?: string
+    setHasCalculation: (hasCalculation: boolean) => void
+    hasCalculation: boolean
 }
 
 
 export default function Calculator(props: ICalculeProps) {
-    const [ hasCalculation, setHasCalculation ] = useState(false)
     const [ precision, setPrecision ] = useState(Math.pow(10, 15))
     const [ result, setResult ] = useState('')
     const [ query, setQuery ] = useState(props.query)
 
     function calculator(q: string): string {
-        setHasCalculation(false)
         if (q.match(/^[0-9]{1}[0-9\s\+\/\-\*\.]*$/)) {
             const result = eval(q)
-            setHasCalculation(true)
+            props.setHasCalculation(true)
             return (Math.round(result * precision) / precision).toString(10)
         }
         throw new Error('Invalid calculation')
     }
 
     function processQuery(q?: string): string {
-        setHasCalculation(false)
+        props.setHasCalculation(false)
         if (!q) return ''
         try {
             return calculator(q)
@@ -37,7 +37,7 @@ export default function Calculator(props: ICalculeProps) {
         setResult(processQuery(props.query))
     }, [ props ])
 
-    if (hasCalculation) {
+    if (props.hasCalculation) {
         return (
             <div className="hero">
                 <p >= { result }</p>
