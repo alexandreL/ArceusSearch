@@ -1,16 +1,6 @@
-// show a result of a search
+import { SearchDetail } from '../../types/SearchResults'
 
-import router from 'next/router'
-
-export interface ResultProps {
-    title: string
-    description?: string
-    url: string
-    displayUrl?: string
-    thumbnail?: string
-}
-
-export default function Result(data: ResultProps) {
+export default function SearchResult(data: SearchDetail) {
     return (
         <a className="card shadow-md hover:shadow-neutral" href={ data.url }>
             <div className="card-body">

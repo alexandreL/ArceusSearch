@@ -2,15 +2,16 @@ import Head from 'next/head'
 import { useRouter } from 'next/router'
 import { useState, useEffect } from 'react'
 import Calculator from '../components/elements/calcule'
-import Result, { ResultProps } from '../components/elements/result'
 import { io, Socket } from 'socket.io-client'
-import useDebounce from '../components/utils/debouce'
+import { SearchResults, SearchDetail, SocialDetail } from '../types/SearchResults'
+import SocialResult from '../components/elements/socialResult'
+import SearchResult from '../components/elements/searchResult'
 
 const coolDown = 500
 let timeout: NodeJS.Timeout
 
 export interface HomeProps {
-    results: ResultProps[]
+    results: SearchResults
 }
 
 function Home(props: HomeProps) {
@@ -20,8 +21,9 @@ function Home(props: HomeProps) {
     if (Array.isArray(q)) q = q[0]
     const [ query, setQuery ] = useState(q || '')
     const [ lastQuery, setLastQuery ] = useState(query)
-    const [ results, setResults ] = useState<Array<ResultProps>>(props.results || [])
-    const debouncedSearch = useDebounce(query, 500)
+    const [ searchResult, setSearchResult ] = useState<Array<SearchDetail>>(props.results?.search || [])
+    const [ socialResult, setSocialResult ] = useState<Array<SocialDetail>>(props.results?.social || [])
+    // const debouncedSearch = useDebounce(query, 500)
     const [ isLoaded, setIsLoaded ] = useState(false)
     const [ hasCalculation, setHasCalculation ] = useState(false)
 
@@ -29,21 +31,24 @@ function Home(props: HomeProps) {
         if (query && query.length > 0 && query !== lastQuery && !hasCalculation) {
             setIsLoaded(true)
             setLastQuery(query)
+            setSearchResult([])
+            setSocialResult([])
             fetch('/api/search?query=' + query).then(res => res.json()).then(data => {
-                setResults(data)
+                setSearchResult(data.search)
+                setSocialResult(data.social)
                 router.push('/?q=' + query, undefined, { shallow: true })
                 setIsLoaded(false)
             }).catch(err => console.error(err))
         }
     }
 
-/*
-    useEffect(() => {
-        if (debouncedSearch) {
-            getResults()
-        }
-    }, [ debouncedSearch ])
-*/
+    /*
+        useEffect(() => {
+            if (debouncedSearch) {
+                getResults()
+            }
+        }, [ debouncedSearch ])
+    */
 
     {
         const socketInitializer = async () => {
@@ -95,27 +100,26 @@ function Home(props: HomeProps) {
                         <Calculator query={ query } hasCalculation={ hasCalculation } setHasCalculation={ setHasCalculation }/>
                     </div>
                 </div>
-                { isLoaded && <progress className="progress progress-secondary"></progress> }
+                { isLoaded && <progress className="progress progress-primary"></progress> }
                 <div className="flex flex-col w-full lg:flex-row pt-2">
                     <div className="grid gap-2 flex-initial lg:w-1/2 md:w-full">
-                        { results.map((item, index) => {
+                        { searchResult.map((item, index) => {
                             return (
-                                <Result key={ index }
-                                        title={ item.title }
-                                        description={ item.description }
-                                        url={ item.url }
-                                        displayUrl={ item.displayUrl }/>
+                                <SearchResult key={ index }
+                                              title={ item.title }
+                                              description={ item.description }
+                                              url={ item.url }
+                                              displayUrl={ item.displayUrl }/>
                             )
                         }) }
 
                     </div>
                     <div className="divider divider-horizontal"></div>
                     <div className="flex-initial gap-2 w-1/2">
-                        <Result key={ 1 }
-                                title={ 'No data' }
-                                description={ '' }
-                                url={ '' }
-                                displayUrl={ '' }/>
+                        { socialResult.map((item, index) => {
+                            return (<SocialResult key={ index } data={ item }/>)
+                        }) }
+
                     </div>
                 </div>
             </main>
