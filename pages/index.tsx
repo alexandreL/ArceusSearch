@@ -102,24 +102,30 @@ function Home(props: HomeProps) {
                 </div>
                 { isLoaded && <progress className="progress progress-primary"></progress> }
                 <div className="flex flex-col w-full lg:flex-row pt-2">
-                    <div className="grid gap-2 flex-initial lg:w-1/2 md:w-full">
+                    <div className="flex-initial lg:w-1/2 md:w-full">
+                        <h2 className="text-2xl font-bold pl-2">Search results</h2>
                         { searchResult.map((item, index) => {
                             return (
                                 <SearchResult key={ index }
-                                              title={ item.title }
-                                              description={ item.description }
-                                              url={ item.url }
-                                              displayUrl={ item.displayUrl }/>
+                                              data={ item }/>
                             )
                         }) }
 
                     </div>
                     <div className="divider divider-horizontal"></div>
-                    <div className="flex-initial gap-2 w-1/2">
-                        { socialResult.map((item, index) => {
-                            return (<SocialResult key={ index } data={ item }/>)
-                        }) }
-
+                    <div className="flex-initial lg:w-1/2 md:w-full">
+                        <div className={ 'flex flex-col w-full lg:flex-row ' }>
+                            <div className={'flex-initial lg:w-1/2 md:w-full '}>
+                                <h2 className="text-2xl font-bold pl-2">Actuality results</h2>
+                            </div>
+                            <div className="divider divider-horizontal"></div>
+                            <div className={'flex-initial lg:w-1/2 md:w-full'}>
+                                <h2 className="text-2xl font-bold pl-2">Twitter results</h2>
+                                { socialResult.map((item, index) => {
+                                return (<SocialResult key={ index } data={ item }/>)
+                            }) }
+                            </div>
+                        </div>
                     </div>
                 </div>
             </main>

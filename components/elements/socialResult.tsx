@@ -13,7 +13,7 @@ export default function SocialResult(props: { data: SocialDetail }) {
             <div className="card-body">
                 <div className="flex flex-row justify-between">
                     <div className="flex flex-row">
-                        <img className="rounded-full w-8 h-8" src={ data.user.profileImageUrl } width={'24'} height={'24'} alt=""/>
+                        <img className="rounded-full w-8 h-8" src={ data.user.profileImageUrl } alt=""/>
                         <div className="ml-2">
                             <h2 className="card-title">{ data.user.name }</h2>
                             <div className="link link-accent">@{ data.user.screenName }</div>
