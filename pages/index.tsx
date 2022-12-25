@@ -9,6 +9,7 @@ import SearchResult from '../components/elements/searchResult'
 
 const coolDown = 500
 let timeout: NodeJS.Timeout
+let socket: Socket<any>
 
 export interface HomeProps {
     results: SearchResults
@@ -16,10 +17,10 @@ export interface HomeProps {
 
 function Home(props: HomeProps) {
     const router = useRouter()
-    let socket: Socket<any>
     let { q } = router.query
     if (Array.isArray(q)) q = q[0]
     const [ query, setQuery ] = useState(q || '')
+    const [ answer, setAnswer ] = useState('')
     const [ lastQuery, setLastQuery ] = useState(query)
     const [ searchResult, setSearchResult ] = useState<Array<SearchDetail>>(props.results?.search || [])
     const [ socialResult, setSocialResult ] = useState<Array<SocialDetail>>(props.results?.social || [])
@@ -27,12 +28,18 @@ function Home(props: HomeProps) {
     const [ isLoaded, setIsLoaded ] = useState(false)
     const [ hasCalculation, setHasCalculation ] = useState(false)
 
+    const continueSearch = () => {
+        socket.emit('query-submit-continue', query)
+    }
+
     const getResults = () => {
         if (query && query.length > 0 && query !== lastQuery && !hasCalculation) {
             setIsLoaded(true)
             setLastQuery(query)
+            setAnswer('')
             setSearchResult([])
             setSocialResult([])
+            socket?.emit('query-submit', query)
             fetch('/api/search?query=' + query).then(res => res.json()).then(data => {
                 setSearchResult(data.search)
                 setSocialResult(data.social)
@@ -52,10 +59,14 @@ function Home(props: HomeProps) {
 
     {
         const socketInitializer = async () => {
+            if (socket) return
             await fetch('/api/socket')
             socket = io()
 
             socket.on('connect', () => {
+            })
+            socket.on('openai-response', (data: string) => {
+                setAnswer(data)
             })
         }
 
@@ -66,7 +77,7 @@ function Home(props: HomeProps) {
 
     const handleInput = (e: any) => {
         setQuery(e.target.value)
-        socket?.emit('query', e.target.value)
+        socket?.emit('query-input-change', e.target.value)
     }
 
     const handleKeyDown = (e: any) => {
@@ -101,6 +112,15 @@ function Home(props: HomeProps) {
                     </div>
                 </div>
                 { isLoaded && <progress className="progress progress-primary"></progress> }
+                <div className="min-h-12 card bg-neutral-focus m-4">
+                    <div className="card-body">
+                        <h2 className="card-title">gpt answer</h2>
+                        <p className="card-text whitespace-pre-wrap">{ answer }</p>
+                        {/*    button to continue*/}
+                        <button className="btn btn-primary" onClick={ () => continueSearch() }>Continue</button>
+                    </div>
+
+                </div>
                 <div className="flex flex-col w-full lg:flex-row pt-2">
                     <div className="flex-initial lg:w-1/2 md:w-full">
                         <h2 className="text-2xl font-bold pl-2">Search results</h2>
@@ -115,15 +135,15 @@ function Home(props: HomeProps) {
                     <div className="divider divider-horizontal"></div>
                     <div className="flex-initial lg:w-1/2 md:w-full">
                         <div className={ 'flex flex-col w-full lg:flex-row ' }>
-                            <div className={'flex-initial lg:w-1/2 md:w-full '}>
+                            <div className={ 'flex-initial lg:w-1/2 md:w-full ' }>
                                 <h2 className="text-2xl font-bold pl-2">Actuality results</h2>
                             </div>
                             <div className="divider divider-horizontal"></div>
-                            <div className={'flex-initial lg:w-1/2 md:w-full'}>
+                            <div className={ 'flex-initial lg:w-1/2 md:w-full' }>
                                 <h2 className="text-2xl font-bold pl-2">Twitter results</h2>
                                 { socialResult.map((item, index) => {
-                                return (<SocialResult key={ index } data={ item }/>)
-                            }) }
+                                    return (<SocialResult key={ index } data={ item }/>)
+                                }) }
                             </div>
                         </div>
                     </div>

@@ -55,19 +55,8 @@ async function getTwitterData(query: string) {
                 'authorization': `Bearer ${ process.env.TWITTER_BEARER_TOKEN }`
             }
         })
+        if (result.data.data.length === 0) return []
         const twitterResult: Array<SocialDetail> = []
-        /*
-                twitterResult.push({
-                    content:  string,
-                    date: string,
-                    user: {
-                        name: string,
-                        screenName: string,
-                        profileImageUrl: string
-                    },
-                    url: string,
-                })
-        */
         for (const tweet of result.data.data) {
             const user = result.data.includes.users.find((user: any) => user.id === tweet.author_id)
             twitterResult.push({
@@ -85,7 +74,7 @@ async function getTwitterData(query: string) {
         return twitterResult
     } catch (e: any) {
         console.error('Error getTwitterData')
-        handleAxiosError(e)
+        // handleAxiosError(e)
         return []
     }
 
