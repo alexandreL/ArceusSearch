@@ -1,9 +1,39 @@
 // Next.js API route support: https://nextjs.org/docs/api-routes/introduction
 import type { NextApiRequest, NextApiResponse } from 'next'
-import { load } from 'cheerio'
-import { SearchDetail, SearchResults, SocialDetail } from '../../types/SearchResults'
+import { SearchDetail, SearchResults, SocialDetail, ActualityDetail } from '../../types/SearchResults'
 import axios from 'axios'
 import { handleAxiosError } from '../../components/utils/axios'
+// @ts-ignore
+import NEWSAPI from 'newsapi'
+const newsapi = new NEWSAPI(process.env.NEWS_API_KEY)
+
+const getNewsData = async (query: string) => {
+    console.log('getNewsData', query)
+    try {
+        const result = await newsapi.v2.everything({
+            q: query,
+            pageSize: 10,
+            sortBy: 'relevancy',
+            page: 1
+        })
+        const newsResult: Array<ActualityDetail> = []
+        for (const article of result.articles) {
+            newsResult.push({
+                title: article.title,
+                description: article.description,
+                url: article.url,
+                thumbnail: article.urlToImage,
+                source: article.source.name,
+                date: article.publishedAt
+            })
+        }
+        return newsResult
+    } catch (e) {
+        console.error('Error getNewsData')
+        handleAxiosError(e)
+        return []
+    }
+}
 
 const getGoogleOrganicData = async (query: string) => {
     console.log('getGoogleOrganicData', query)
@@ -91,21 +121,23 @@ export default async function handler(
     }
     if (typeof query !== 'string') {
         console.log('Query is not a string')
-        return res.status(400).json({ search: [], social: [] })
+        return res.status(400).json({ search: [], social: [], actuality: [] })
     }
     try {
         const results: Array<Promise<Array<SearchDetail | SocialDetail>>> = [
             getGoogleOrganicData(query),
             getTwitterData(query),
+            getNewsData(query),
         ]
         const rawResults = await Promise.all(results)
         const formattedResults = {
             search: rawResults[0] as Array<SearchDetail>,
             social: rawResults[1] as Array<SocialDetail>,
+            actuality: rawResults[2] as Array<ActualityDetail>,
         }
         res.status(200).json(formattedResults)
     } catch (e) {
         console.error(e)
-        res.status(500).json({ search: [], social: [] })
+        res.status(500).json({ search: [], social: [], actuality: [] })
     }
 }

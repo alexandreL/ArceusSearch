@@ -2,12 +2,15 @@ import Head from 'next/head'
 import { useRouter } from 'next/router'
 import { useState, useEffect } from 'react'
 import { io, Socket } from 'socket.io-client'
-import { SearchResults, SearchDetail, SocialDetail } from '../types/SearchResults'
+import { SearchResults, SearchDetail, SocialDetail, ActualityDetail } from '../types/SearchResults'
 import SocialResult from '../components/elements/socialResult'
 import SearchResult from '../components/elements/searchResult'
 import SearchInput from '../components/elements/searchInput'
 import Calculator from '../components/elements/calcule'
-import dynamiqueBackground from '../components/elements/dynamiqueBackground'
+import _axios from 'axios'
+import ActualityResult from '../components/elements/actualityResult'
+
+const axios = _axios.create({})
 
 const coolDown = 500
 let timeout: NodeJS.Timeout
@@ -27,6 +30,8 @@ function Home(props: HomeProps) {
     const [ lastQuery, setLastQuery ] = useState(query)
     const [ searchResult, setSearchResult ] = useState<Array<SearchDetail>>(props.results?.search || [])
     const [ socialResult, setSocialResult ] = useState<Array<SocialDetail>>(props.results?.social || [])
+    const [ actualityResult, setActualityResult ] = useState<Array<ActualityDetail>>(props.results?.actuality || [])
+    const [ backgroundUrl, setBackgroundUrl ] = useState('')
     // const debouncedSearch = useDebounce(query, 500)
     const [ isLoaded, setIsLoaded ] = useState(false)
     const [ hasCalculation, setHasCalculation ] = useState(false)
@@ -36,16 +41,18 @@ function Home(props: HomeProps) {
     }
 
     const getResults = () => {
-        if (query && query.length > 0 && query !== lastQuery && !hasCalculation) {
+        if (query && query !== lastQuery && !hasCalculation) {
             setIsLoaded(true)
             setLastQuery(query)
             setAnswer('')
             setSearchResult([])
             setSocialResult([])
+            setActualityResult([])
             socket?.emit('query-submit', query)
             fetch('/api/search?query=' + query).then(res => res.json()).then(data => {
                 setSearchResult(data.search)
                 setSocialResult(data.social)
+                setActualityResult(data.actuality)
                 router.push('/?q=' + query, undefined, { shallow: true })
                 setIsLoaded(false)
             }).catch(err => console.error(err))
@@ -74,7 +81,12 @@ function Home(props: HomeProps) {
         }
 
         useEffect(() => {
+            console.log('useEffect main')
             socketInitializer().catch(e => console.error(e))
+            if (backgroundUrl === '')
+                axios.get('/api/dynamicBackground').then(res => {
+                    setBackgroundUrl(res.data.img)
+                })
         }, [])
     }
 
@@ -90,12 +102,17 @@ function Home(props: HomeProps) {
                 if (query == e.target.value)
                     return getResults()
             } else {
-                // rest all page
+                setLastQuery(query)
+                setAnswer('')
+                setSearchResult([])
+                setSocialResult([])
+                setActualityResult([])
+                router.push('/?q=' + query, undefined, { shallow: true })
             }
         }
     }
 
-    if ((query && query.length > 0) && !hasCalculation && lastQuery != '') {
+    if (lastQuery.length > 0) {
         return (
             <>
                 <Head>
@@ -108,16 +125,17 @@ function Home(props: HomeProps) {
                     <SearchInput query={ query } handleInput={ handleInput } handleKeyDown={ handleKeyDown }
                                  hasCalculation={ hasCalculation } setHasCalculation={ setHasCalculation }/>
                     { isLoaded && <progress className="progress progress-primary"></progress> }
-                    <div className="min-h-12 card bg-neutral-focus m-4">
+                    { answer && <div className="min-h-12 card bg-neutral m-4">
                         <div className="card-body">
                             <h2 className="card-title">gpt answer</h2>
-                            <p className="card-text whitespace-pre-wrap">{ answer }</p>
-                            {/*    button to continue*/ }
-                            <button className="btn btn-primary" onClick={ () => continueSearch() }>Continue</button>
+                            <p className={ 'card-text whitespace-pre-wrap' }>{ answer }</p>
+                            <div className={ 'card-actions justify-start ' }>
+                                <button className={ 'btn btn-primary ' } onClick={ () => continueSearch() }>Continue</button>
+                            </div>
                         </div>
-
                     </div>
-                    <div className="flex flex-col w-full lg:flex-row pt-2">
+                    }
+                    <div className="flex flex-col w-full lg:flex-row pt-6">
                         <div className="flex-initial lg:w-1/2 md:w-full">
                             <h2 className="text-2xl font-bold pl-2">Search results</h2>
                             { searchResult.map((item, index) => {
@@ -131,11 +149,14 @@ function Home(props: HomeProps) {
                         <div className="divider divider-horizontal"></div>
                         <div className="flex-initial lg:w-1/2 md:w-full">
                             <div className={ 'flex flex-col w-full lg:flex-row ' }>
-                                <div className={ 'flex-initial lg:w-1/2 md:w-full ' }>
+                                <div className={ 'flex flex-col lg:w-1/2 md:w-full space-y-2' }>
                                     <h2 className="text-2xl font-bold pl-2">Actuality results</h2>
+                                    { actualityResult.map((item, index) => {
+                                        return (<ActualityResult key={ index } data={ item }/>)
+                                    }) }
                                 </div>
                                 <div className="divider divider-horizontal"></div>
-                                <div className={ 'flex-initial lg:w-1/2 md:w-full' }>
+                                <div className={ 'flex flex-col lg:w-1/2 md:w-full space-y-2 ' }>
                                     <h2 className="text-2xl font-bold pl-2">Twitter results</h2>
                                     { socialResult.map((item, index) => {
                                         return (<SocialResult key={ index } data={ item }/>)
@@ -157,7 +178,8 @@ function Home(props: HomeProps) {
                     <link rel="icon" href="/favicon.ico"/>
                 </Head>
                 <main className="">
-                    <div className="grid content-center bg-cover min-h-screen" style={ { backgroundImage: `url(${ dynamiqueBackground.getBackground() })` } }>
+                    <div className="grid content-center bg-cover min-h-screen"
+                         style={ { backgroundImage: `url(${ backgroundUrl })` } }>
                         <div className="">
                             <div className="grid grid-cols-6 gap-4">
                                 <div className=" col-start-2 col-span-4 ">

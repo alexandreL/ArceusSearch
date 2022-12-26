@@ -6,6 +6,15 @@ export interface SearchDetail {
     thumbnail?: string
 }
 
+export interface ActualityDetail {
+    title: string
+    description?: string
+    url: string
+    thumbnail?: string
+    source?: string
+    date?: string
+}
+
 export interface SocialDetail {
     content?: string
     url: string
@@ -21,4 +30,5 @@ export interface SocialDetail {
 export interface SearchResults {
     search: Array<SearchDetail>
     social: Array<SocialDetail>
+    actuality: Array<ActualityDetail>
 }

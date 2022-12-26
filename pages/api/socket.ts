@@ -37,8 +37,8 @@ const SocketHandler = (req: any, res: any) => {
                     let answer: string = response.data.choices[0].text!
                     console.log('Message-response: ', answer)
                     answer = answer.replace('\n\n', '\n')
-                    previousMessage = answer
-                    socket.emit('openai-response', answer)
+                    previousMessage = msg + answer
+                    socket.emit('openai-response', previousMessage)
                 } catch (error: any) {
                     console.error('openai error')
                     if (error.response) {
@@ -63,8 +63,8 @@ const SocketHandler = (req: any, res: any) => {
                     let answer: string = response.data.choices[0].text!
                     console.log('Message-response: ', answer)
                     answer = answer.replace('\n\n', '\n')
-                    previousMessage = answer
-                    socket.emit('openai-response', answer)
+                    previousMessage += answer
+                    socket.emit('openai-response', previousMessage)
                 } catch (error: any) {
                     console.error('openai error')
                     if (error.response) {

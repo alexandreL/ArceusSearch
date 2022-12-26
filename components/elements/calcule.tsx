@@ -39,7 +39,7 @@ export default function Calculator(props: ICalculeProps) {
 
     if (props.hasCalculation) {
         return (
-            <div className="hero">
+            <div className="hero bg-neutral rounded-full px-4">
                 <p >= { result }</p>
             </div>
         )
