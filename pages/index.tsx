@@ -202,7 +202,7 @@ function Home(props: HomeProps) {
 
 Home.getInitialProps = async (context: any) => {
     if (context.query?.q) {
-        const res = await fetch(`http://localhost:3000/api/search?query=${ context.query.q }`)
+        const res = await fetch(`http://localhost:2222/api/search?query=${ context.query.q }`)
         const data = await res.json()
         if (!data) {
             return {}
