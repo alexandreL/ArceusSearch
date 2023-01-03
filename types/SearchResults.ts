@@ -32,3 +32,8 @@ export interface SearchResults {
     social: Array<SocialDetail>
     actuality: Array<ActualityDetail>
 }
+
+export interface Suggestion {
+    name: string
+    id: number
+}

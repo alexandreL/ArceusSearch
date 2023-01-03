@@ -46,12 +46,15 @@ const getGoogleOrganicData = async (query: string) => {
                 q: query,
                 num: 10,
                 safe: 'off',
-                fields: 'items(title,link,snippet,displayLink,pagemap(cse_image(src)))',
+                // fields: 'items(title,link,snippet,displayLink,pagemap(cse_image(src)))',
                 c2coff: 1,
+                gl: 'fr',
+                hl: 'fr',
             }
         })
         const googleResult: Array<SearchDetail> = []
         for (const item of result.data.items) {
+            console.log('item', item)
             if (item.pagemap?.cse_image?.length > 1) {
                 console.log('cse_image', item.pagemap.cse_image)
             }
@@ -59,7 +62,7 @@ const getGoogleOrganicData = async (query: string) => {
                 title: item.title,
                 description: item.snippet,
                 url: item.link,
-                displayUrl: item.displayLink,
+                displayUrl: item.formattedUrl,
                 thumbnail: item.pagemap?.cse_image?.[0]?.src
             })
         }

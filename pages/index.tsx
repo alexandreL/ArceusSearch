@@ -2,7 +2,7 @@ import Head from 'next/head'
 import { useRouter } from 'next/router'
 import { useState, useEffect } from 'react'
 import { io, Socket } from 'socket.io-client'
-import { SearchResults, SearchDetail, SocialDetail, ActualityDetail } from '../types/SearchResults'
+import { SearchResults, SearchDetail, SocialDetail, ActualityDetail, Suggestion } from '../types/SearchResults'
 import SocialResult from '../components/elements/socialResult'
 import SearchResult from '../components/elements/searchResult'
 import SearchInput from '../components/elements/searchInput'
@@ -28,10 +28,12 @@ function Home(props: HomeProps) {
     const [ query, setQuery ] = useState(q || '')
     const [ answer, setAnswer ] = useState('')
     const [ lastQuery, setLastQuery ] = useState(query)
+    const [ tmpQuery, setTmpQuery ] = useState(query)
     const [ searchResult, setSearchResult ] = useState<Array<SearchDetail>>(props.results?.search || [])
     const [ socialResult, setSocialResult ] = useState<Array<SocialDetail>>(props.results?.social || [])
     const [ actualityResult, setActualityResult ] = useState<Array<ActualityDetail>>(props.results?.actuality || [])
     const [ backgroundUrl, setBackgroundUrl ] = useState('')
+    const [ autoSuggest, setAutoSuggest ] = useState<Suggestion[]>([])
     // const debouncedSearch = useDebounce(query, 500)
     const [ isLoaded, setIsLoaded ] = useState(false)
     const [ hasCalculation, setHasCalculation ] = useState(false)
@@ -78,6 +80,9 @@ function Home(props: HomeProps) {
             socket.on('openai-response', (data: string) => {
                 setAnswer(data)
             })
+            socket.on('ac', (data: string[]) => {
+                setAutoSuggest(data.map((item: string, index: number) => ({ id: index, name: item })))
+            })
         }
 
         useEffect(() => {
@@ -91,24 +96,33 @@ function Home(props: HomeProps) {
     }
 
     const handleInput = (e: any) => {
-        setQuery(e.target.value)
-        socket?.emit('query-input-change', e.target.value)
+        let value: string
+        if (typeof e === 'string')
+            value = e
+        else
+            value = e.target.value
+        if (query !== value) {
+            console.log('save query')
+            setQuery(value)
+            socket?.emit('query-input-change', value)
+        } else {
+            console.log('search query')
+            return launchSearch(value)
+        }
     }
 
-    const handleKeyDown = (e: any) => {
-        if (e.key === 'Enter') {
-            console.log('enter press here! ')
-            if (query && query.length > 0) {
-                if (query == e.target.value)
-                    return getResults()
-            } else {
-                setLastQuery(query)
-                setAnswer('')
-                setSearchResult([])
-                setSocialResult([])
-                setActualityResult([])
-                router.push('/?q=' + query, undefined, { shallow: true })
-            }
+    const launchSearch = (q: string) => {
+        console.log('launchSearch')
+        console.log(q)
+        if (query && query.length > 0) {
+            return getResults()
+        } else {
+            setLastQuery(query)
+            setAnswer('')
+            setSearchResult([])
+            setSocialResult([])
+            setActualityResult([])
+            router.push('/?q=' + query, undefined, { shallow: true })
         }
     }
 
@@ -122,8 +136,14 @@ function Home(props: HomeProps) {
                     <link rel="icon" href="/favicon.ico"/>
                 </Head>
                 <main className="">
-                    <SearchInput query={ query } handleInput={ handleInput } handleKeyDown={ handleKeyDown }
-                                 hasCalculation={ hasCalculation } setHasCalculation={ setHasCalculation }/>
+                    <div className="grid grid-cols-6 gap-4 gap-y-4 bg-neutral">
+                        <SearchInput query={ query } handleInput={ handleInput }
+                                     launchSearch={ launchSearch }
+                                     hasCalculation={ hasCalculation }
+                                     setHasCalculation={ setHasCalculation }
+                                     setQuery={ setQuery }
+                                     autoSuggest={ autoSuggest }/>
+                    </div>
                     { isLoaded && <progress className="progress progress-primary"></progress> }
                     { answer && <div className="min-h-12 card bg-neutral m-4">
                         <div className="card-body">
@@ -183,9 +203,12 @@ function Home(props: HomeProps) {
                         <div className="">
                             <div className="grid grid-cols-6 gap-4">
                                 <div className=" col-start-2 col-span-4 ">
-                                    <input autoFocus name="search" type="text" placeholder="Search"
-                                           className="input input-bordered w-full my-2 shadow-md text-xl"
-                                           value={ query } onInput={ handleInput } onKeyDown={ handleKeyDown }/>
+                                    <p className={ 'text-center text-9xl text-white font-bold' }
+                                       style={ { textShadow: '1px 1px 3px rgb(0 0 0 / 29%), 2px 4px 7px rgb(73 64 125 / 35%)' } }>19:11</p>
+                                    <div className="divider"></div>
+                                    <SearchInput query={ query } handleInput={ handleInput } launchSearch={ launchSearch }
+                                                 hasCalculation={ hasCalculation } setHasCalculation={ setHasCalculation }
+                                                 setQuery={ setQuery } autoSuggest={ autoSuggest }/>
                                     {/*<button className="btn" onClick={ handleClick }>Go</button>*/ }
                                 </div>
                                 <div className={ 'justify-self-start flex' }>

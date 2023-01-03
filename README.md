@@ -9,7 +9,7 @@ _It is a work in progress, and my first Project with NextJS. I'm still learning 
 - Classique Search over the web with Google (still the best, but maybe add other search engines)
 - A flux of news from the web
 - A flux of tweets from Twitter
-- An answer to your question with OpenAI GPT-3 (maybe add chatGPT)
+- An answer to your question with OpenAI GPT-3 (hopefully add chatGPT) :+1:
 - Instant answers for simple cases (calculator)
 - ad free
 - background image from Bing
@@ -26,6 +26,7 @@ _It is a work in progress, and my first Project with NextJS. I'm still learning 
 - [ ] add a button to change to light theme
 - [ ] ctrl +k for focus on search bar
 - [ ] better image from unsplash.com
+- [ ] sexy favicon
 - [ ] maybe implement wolframalpha.com
 - [ ] maybe implement duckduckgo.com
 
