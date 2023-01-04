@@ -54,7 +54,7 @@ const getGoogleOrganicData = async (query: string) => {
         })
         const googleResult: Array<SearchDetail> = []
         for (const item of result.data.items) {
-            console.log('item', item)
+            console.log('item', item.pagemap)
             if (item.pagemap?.cse_image?.length > 1) {
                 console.log('cse_image', item.pagemap.cse_image)
             }

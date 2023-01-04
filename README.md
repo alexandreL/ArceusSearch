@@ -17,15 +17,16 @@ _It is a work in progress, and my first Project with NextJS. I'm still learning 
 ## ToDo
 
 - [ ] Clean the code (the project is a mess and still a POC)
-- [ ] Implement a autocomplete search (google can do it, need to find another service)
+- [x] Implement a autocomplete search (google can do it, need to find another service)
 - [ ] Simple backend cache for google search with cooldown
 - [ ] Simple backend cache for news and twitter search with a shorter cooldown
 - [ ] Implement bang support like DuckDuckGo
 - [ ] Add result of wikipedia if exact match
+- [ ] Add pertinent images
 - [ ] fav like [nightTab](https://github.com/zombieFox/nightTab) The best new tab extension
 - [ ] add a button to change to light theme
 - [ ] ctrl +k for focus on search bar
-- [ ] better image from unsplash.com
+- [ ] better image from unsplash.com for the main page
 - [ ] sexy favicon
 - [ ] maybe implement wolframalpha.com
 - [ ] maybe implement duckduckgo.com
