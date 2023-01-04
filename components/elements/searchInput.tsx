@@ -2,6 +2,7 @@ import Calculator from './calcule'
 import { useState } from 'react'
 import { ReactSearchAutocomplete } from 'react-search-autocomplete'
 import { Suggestion } from '../../types/SearchResults'
+// @ts-ignore
 import daisyuiColors from 'daisyui/src/colors'
 
 
