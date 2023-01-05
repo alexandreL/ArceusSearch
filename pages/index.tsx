@@ -9,6 +9,8 @@ import SearchInput from '../components/elements/searchInput'
 import Calculator from '../components/elements/calcule'
 import _axios from 'axios'
 import ActualityResult from '../components/elements/actualityResult'
+import { NextPageContext } from 'next'
+import { server_url } from '../utils/config'
 
 const axios = _axios.create({})
 
@@ -223,9 +225,9 @@ function Home(props: HomeProps) {
     }
 }
 
-Home.getInitialProps = async (context: any) => {
+Home.getInitialProps = async (context: NextPageContext) => {
     if (context.query?.q) {
-        const res = await fetch(`http://localhost:2222/api/search?query=${ context.query.q }`)
+        const res = await fetch(`${ server_url }/api/search?query=${ context.query.q }`)
         const data = await res.json()
         if (!data) {
             return {}
