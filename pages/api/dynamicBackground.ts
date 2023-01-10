@@ -16,7 +16,7 @@ class DynamicBackground {
         const timeToTomorrow = tomorrow.getTime() - now.getTime()
         setInterval(() => {
             this.loadNewImage().catch(e => console.error(e))
-        }, 1000 * 60 * 60 * 24)
+        }, timeToTomorrow)
     }
 
     async loadNewImage() {
