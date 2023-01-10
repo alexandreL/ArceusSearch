@@ -18,8 +18,8 @@ _It is a work in progress, and my first Project with NextJS. I'm still learning 
 
 - [ ] Clean the code (the project is a mess and still a POC)
 - [x] Implement a autocomplete search (google can do it, need to find another service)
-- [ ] Simple backend cache for google search with cooldown
-- [ ] Simple backend cache for news and twitter search with a shorter cooldown
+- [x] Simple backend cache for google search with cooldown
+- [x] Simple backend cache for news and twitter search with a shorter cooldown
 - [ ] Implement bang support like DuckDuckGo
 - [ ] Add result of wikipedia if exact match
 - [ ] Add pertinent images

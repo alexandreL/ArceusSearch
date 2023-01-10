@@ -2,9 +2,11 @@
 import type { NextApiRequest, NextApiResponse } from 'next'
 import { SearchDetail, SearchResults, SocialDetail, ActualityDetail } from '../../types/SearchResults'
 import axios from 'axios'
+import memoize from 'timed-memoize'
 import { handleAxiosError } from '../../components/utils/axios'
 // @ts-ignore
 import NEWSAPI from 'newsapi'
+
 const newsapi = new NEWSAPI(process.env.NEWS_API_KEY)
 
 const getNewsData = async (query: string) => {
@@ -106,13 +108,14 @@ async function getTwitterData(query: string) {
 
         return twitterResult
     } catch (e: any) {
-        console.error('Error getTwitterData')
-        // handleAxiosError(e)
+        console.error('Error getTwitterData', e)
         return []
     }
-
-
 }
+
+const memoizedGetGoogleOrganicData = memoize(getGoogleOrganicData, { timeout: 1000 * 60 * 60 * 12 }) // 12 hours
+const memoizedGetTwitterData = memoize(getTwitterData, { timeout: 1000 * 60 }) // 1 minute
+const memoizedGetNewsData = memoize(getNewsData, { timeout: 1000 * 60 * 60 }) // 1 hour
 
 export default async function handler(
     req: NextApiRequest,
@@ -128,9 +131,9 @@ export default async function handler(
     }
     try {
         const results: Array<Promise<Array<SearchDetail | SocialDetail>>> = [
-            getGoogleOrganicData(query),
-            getTwitterData(query),
-            getNewsData(query),
+            memoizedGetGoogleOrganicData(query),
+            memoizedGetTwitterData(query),
+            memoizedGetNewsData(query),
         ]
         const rawResults = await Promise.all(results)
         const formattedResults = {
