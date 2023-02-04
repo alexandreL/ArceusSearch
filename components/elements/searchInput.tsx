@@ -18,11 +18,8 @@ export default function SearchInput(props: SearchInputProps) {
     const { query, launchSearch } = props
     const [ autoSuggest, setAutoSuggest ] = useState<Suggestion[]>([])
     const [ lastQuery, setLastQuery ] = useState('')
-    console.log('query', query)
-    console.log('autoSuggest', autoSuggest)
 
     const handleOnSearch = (q: string, results: Array<Suggestion>) => {
-        console.log('handleOnSearch', q, results)
 
         if (q == lastQuery) {
             return launchSearch(q)
@@ -37,17 +34,15 @@ export default function SearchInput(props: SearchInputProps) {
     }
 
     const handleOnHover = (result: Suggestion) => {
-        console.log('handleOnHover', result)
     }
 
     const handleOnSelect = (item: Suggestion) => {
-        console.log('handleOnSelect', item)
     }
 
     const formatResult = (item: Suggestion) => {
         return (
             <>
-                <span style={ { display: 'block', textAlign: 'left' } }>{ item.name }</span>
+                <span id={ item.id.toString() } style={ { display: 'block', textAlign: 'left' } }>{ item.name }</span>
             </>
         )
     }
@@ -56,15 +51,14 @@ export default function SearchInput(props: SearchInputProps) {
         if (socket) return
         await fetch('/api/socket')
         socket = io()
-        console.log('init socket')
 
         socket.on('ac', (data: string[]) => {
+            console.log('ac', data)
             setAutoSuggest(data.map((item: string, index: number) => ({ id: index, name: item })))
         })
     }
 
     useEffect(() => {
-        console.log('useEffect search')
         socketInitializer().catch(e => console.error(e))
     }, [])
 
@@ -75,7 +69,6 @@ export default function SearchInput(props: SearchInputProps) {
                 onSearch={ handleOnSearch }
                 onHover={ handleOnHover }
                 onSelect={ handleOnSelect }
-                autoFocus
                 inputSearchString={ query }
                 formatResult={ formatResult }
                 styling={ {

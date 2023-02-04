@@ -8,12 +8,13 @@ import { useState, useEffect } from 'react'
 import { SearchResults, SearchDetail, SocialDetail, ActualityDetail } from '../../types/SearchResults'
 import { NextPageContext } from 'next'
 import { server_url } from '../../utils/config'
-import { io } from 'socket.io-client'
+import { io, Socket } from 'socket.io-client'
 
 export interface SearchPageProps {
     results: SearchResults
 }
 
+let socket: Socket<any>
 
 function SearchPage(props: SearchPageProps) {
     const router = useRouter()
@@ -22,22 +23,21 @@ function SearchPage(props: SearchPageProps) {
     const [ query, setQuery ] = useState(q || '')
     const [ answer, setAnswer ] = useState('')
     const [ lastQuery, setLastQuery ] = useState(query)
-    const [ tmpQuery, setTmpQuery ] = useState(query)
     const [ searchResult, setSearchResult ] = useState<Array<SearchDetail>>(props.results?.search || [])
     const [ socialResult, setSocialResult ] = useState<Array<SocialDetail>>(props.results?.social || [])
     const [ actualityResult, setActualityResult ] = useState<Array<ActualityDetail>>(props.results?.actuality || [])
-    const [ backgroundUrl, setBackgroundUrl ] = useState('')
-    const [ autoSuggest, setAutoSuggest ] = useState<Suggestion[]>([])
-    // const debouncedSearch = useDebounce(query, 500)
-    const [ isLoaded, setIsLoaded ] = useState(false)
-    const [ hasCalculation, setHasCalculation ] = useState(false)
 
+    const [ isLoaded, setIsLoaded ] = useState(false)
+    console.log('query', query)
+    console.log('lastQuery', lastQuery)
+
+    // gpt
     const continueSearch = () => {
         socket.emit('query-submit-continue', query)
     }
 
     const getResults = () => {
-        if (query && query !== lastQuery && !hasCalculation) {
+        if (query && query !== lastQuery) {
             setIsLoaded(true)
             setLastQuery(query)
             setAnswer('')
@@ -49,75 +49,42 @@ function SearchPage(props: SearchPageProps) {
                 setSearchResult(data.search)
                 setSocialResult(data.social)
                 setActualityResult(data.actuality)
-                router.push('/?q=' + query, undefined, { shallow: true })
+                router.push('/search?q=' + query, undefined, { shallow: true })
                 setIsLoaded(false)
             }).catch(err => console.error(err))
-        }
-    }
-
-    /*
-        useEffect(() => {
-            if (debouncedSearch) {
-                getResults()
-            }
-        }, [ debouncedSearch ])
-    */
-
-    {
-        const socketInitializer = async () => {
-            if (socket) return
-            await fetch('/api/socket')
-            socket = io()
-
-            socket.on('connect', () => {
-            })
-            socket.on('openai-response', (data: string) => {
-                setAnswer(data)
-            })
-            socket.on('ac', (data: string[]) => {
-                setAutoSuggest(data.map((item: string, index: number) => ({ id: index, name: item })))
-            })
-        }
-
-        useEffect(() => {
-            console.log('useEffect main')
-            socketInitializer().catch(e => console.error(e))
-            if (backgroundUrl === '')
-                axios.get('/api/dynamicBackground').then(res => {
-                    setBackgroundUrl(res.data.img)
-                })
-        }, [])
-    }
-
-    const handleInput = (e: any) => {
-        let value: string
-        if (typeof e === 'string')
-            value = e
-        else
-            value = e.target.value
-        if (query !== value) {
-            console.log('save query')
-            setQuery(value)
-            socket?.emit('query-input-change', value)
         } else {
-            console.log('search query')
-            return launchSearch(value)
+            if (!query) console.log('no query')
+            if (query === lastQuery) console.log('same query')
         }
     }
+
+
+    const socketInitializer = async () => {
+        if (socket) return
+        await fetch('/api/socket')
+        socket = io()
+
+        socket.on('connect', () => {
+        })
+        socket.on('openai-response', (data: string) => {
+            setAnswer(data)
+        })
+    }
+
+    useEffect(() => {
+        console.log('useEffect index')
+        socketInitializer().catch(e => console.error(e))
+    }, [])
+
+    useEffect(() => {
+        console.log('useEffect query')
+        getResults()
+    }, [ query ])
 
     const launchSearch = (q: string) => {
         console.log('launchSearch')
         console.log(q)
-        if (query && query.length > 0) {
-            return getResults()
-        } else {
-            setLastQuery(query)
-            setAnswer('')
-            setSearchResult([])
-            setSocialResult([])
-            setActualityResult([])
-            router.push('/?q=' + query, undefined, { shallow: true })
-        }
+        setQuery(q)
     }
 
     return (<>
@@ -129,12 +96,7 @@ function SearchPage(props: SearchPageProps) {
             </Head>
             <main className="">
                 <div className="grid grid-cols-6 gap-4 gap-y-4 bg-neutral">
-                    <SearchInput query={ query } handleInput={ handleInput }
-                                 launchSearch={ launchSearch }
-                                 hasCalculation={ hasCalculation }
-                                 setHasCalculation={ setHasCalculation }
-                                 setQuery={ setQuery }
-                                 autoSuggest={ autoSuggest }/>
+                    <SearchInput query={ query } launchSearch={ launchSearch }/>
                 </div>
                 { isLoaded && <progress className="progress progress-primary"></progress> }
                 { answer && <div className="min-h-12 card bg-neutral m-4">

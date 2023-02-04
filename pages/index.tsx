@@ -7,11 +7,6 @@ import { useRouter } from 'next/router'
 
 const axios = _axios.create({})
 
-const coolDown = 500
-let timeout: NodeJS.Timeout
-let socket: Socket<any>
-
-
 function Home() {
     const [ query, setQuery ] = useState('')
     const [ backgroundUrl, setBackgroundUrl ] = useState('')
