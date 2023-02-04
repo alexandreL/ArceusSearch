@@ -10,16 +10,36 @@ import NEWSAPI from 'newsapi'
 const newsapi = new NEWSAPI(process.env.NEWS_API_KEY)
 
 const getNewsData = async (query: string) => {
-    console.log('getNewsData', query)
     try {
-        const result = await newsapi.v2.everything({
+        const results = await Promise.all([ newsapi.v2.everything({
             q: query,
             pageSize: 10,
-            sortBy: 'relevancy',
-            page: 1
-        })
+            sortBy: 'publishedAt',
+            page: 1,
+            language: 'fr',
+            searchIn: 'title,description',
+        }), newsapi.v2.everything({
+            q: query,
+            pageSize: 10,
+            sortBy: 'publishedAt',
+            page: 1,
+            language: 'en',
+            searchIn: 'title,description',
+        }) ])
+        const [ frResult, enResult ] = results
+
         const newsResult: Array<ActualityDetail> = []
-        for (const article of result.articles) {
+        for (const article of frResult.articles) {
+            newsResult.push({
+                title: article.title,
+                description: article.description,
+                url: article.url,
+                thumbnail: article.urlToImage,
+                source: article.source.name,
+                date: article.publishedAt
+            })
+        }
+        for (const article of enResult.articles) {
             newsResult.push({
                 title: article.title,
                 description: article.description,
@@ -56,9 +76,9 @@ const getGoogleOrganicData = async (query: string) => {
         })
         const googleResult: Array<SearchDetail> = []
         for (const item of result.data.items) {
-            console.log('item', item.pagemap)
+            // console.log('item', item.pagemap)
             if (item.pagemap?.cse_image?.length > 1) {
-                console.log('cse_image', item.pagemap.cse_image)
+                // console.log('cse_image', item.pagemap.cse_image)
             }
             googleResult.push({
                 title: item.title,
@@ -77,7 +97,6 @@ const getGoogleOrganicData = async (query: string) => {
 }
 
 async function getTwitterData(query: string) {
-    console.log('getTwitterData', query)
     try {
         const result = await axios.get('https://api.twitter.com/2/tweets/search/recent', {
             params: {

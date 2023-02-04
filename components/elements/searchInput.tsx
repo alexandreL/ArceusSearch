@@ -53,7 +53,6 @@ export default function SearchInput(props: SearchInputProps) {
         socket = io()
 
         socket.on('ac', (data: string[]) => {
-            console.log('ac', data)
             setAutoSuggest(data.map((item: string, index: number) => ({ id: index, name: item })))
         })
     }

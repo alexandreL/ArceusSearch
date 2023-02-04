@@ -38,6 +38,7 @@ function SearchPage(props: SearchPageProps) {
 
     const getResults = () => {
         if (query && query !== lastQuery) {
+            console.log('getResults')
             setIsLoaded(true)
             setLastQuery(query)
             setAnswer('')
@@ -55,6 +56,8 @@ function SearchPage(props: SearchPageProps) {
         } else {
             if (!query) console.log('no query')
             if (query === lastQuery) console.log('same query')
+            if (socket) // first load page most of the time
+                socket?.emit('query-submit', query)
         }
     }
 
@@ -72,18 +75,14 @@ function SearchPage(props: SearchPageProps) {
     }
 
     useEffect(() => {
-        console.log('useEffect index')
         socketInitializer().catch(e => console.error(e))
     }, [])
 
     useEffect(() => {
-        console.log('useEffect query')
         getResults()
     }, [ query ])
 
     const launchSearch = (q: string) => {
-        console.log('launchSearch')
-        console.log(q)
         setQuery(q)
     }
 
