@@ -1,40 +1,47 @@
-import Calculator from './calcule'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { ReactSearchAutocomplete } from 'react-search-autocomplete'
 import { Suggestion } from '../../types/SearchResults'
 // @ts-ignore
 import daisyuiColors from 'daisyui/src/colors'
+import { Socket, io } from 'socket.io-client'
 
 
 export interface SearchInputProps {
     query: string
-    handleInput: (e: any) => void
     launchSearch: (e: any) => void
-    hasCalculation: boolean
-    setHasCalculation: (value: (((prevState: boolean) => boolean) | boolean)) => void
-    setQuery: (value: (((prevState: string) => string) | string)) => void
-    autoSuggest: Suggestion[]
 }
 
+let socket: Socket<any>
+
+
 export default function SearchInput(props: SearchInputProps) {
-    const { query, handleInput, launchSearch, hasCalculation, setHasCalculation, autoSuggest, setQuery } = props
-    const [ isFocused, setIsFocused ] = useState(false)
-    const [ selected, setSelected ] = useState(0)
+    const { query, launchSearch } = props
+    const [ autoSuggest, setAutoSuggest ] = useState<Suggestion[]>([])
+    const [ lastQuery, setLastQuery ] = useState('')
+    console.log('query', query)
+    console.log('autoSuggest', autoSuggest)
 
     const handleOnSearch = (q: string, results: Array<Suggestion>) => {
-        handleInput(q)
-        console.log(q, results)
+        console.log('handleOnSearch', q, results)
+
+        if (q == lastQuery) {
+            return launchSearch(q)
+        }
+
+        if (q.length > 2) {
+            if (socket.active) {
+                socket.emit('query-input-change', q)
+            }
+        }
+        setLastQuery(q)
     }
 
     const handleOnHover = (result: Suggestion) => {
-        console.log('handleOnHover')
+        console.log('handleOnHover', result)
     }
 
     const handleOnSelect = (item: Suggestion) => {
-        console.log('handleOnSelect')
-    }
-
-    const handleOnFocus = () => {
+        console.log('handleOnSelect', item)
     }
 
     const formatResult = (item: Suggestion) => {
@@ -45,6 +52,22 @@ export default function SearchInput(props: SearchInputProps) {
         )
     }
 
+    const socketInitializer = async () => {
+        if (socket) return
+        await fetch('/api/socket')
+        socket = io()
+        console.log('init socket')
+
+        socket.on('ac', (data: string[]) => {
+            setAutoSuggest(data.map((item: string, index: number) => ({ id: index, name: item })))
+        })
+    }
+
+    useEffect(() => {
+        console.log('useEffect search')
+        socketInitializer().catch(e => console.error(e))
+    }, [])
+
     return <>
         <div className=" col-start-2 col-span-4 my-2">
             <ReactSearchAutocomplete<Suggestion>
@@ -52,7 +75,6 @@ export default function SearchInput(props: SearchInputProps) {
                 onSearch={ handleOnSearch }
                 onHover={ handleOnHover }
                 onSelect={ handleOnSelect }
-                onFocus={ handleOnFocus }
                 autoFocus
                 inputSearchString={ query }
                 formatResult={ formatResult }
@@ -64,9 +86,6 @@ export default function SearchInput(props: SearchInputProps) {
                     hoverBackgroundColor: daisyuiColors['neutral-focus'],
                 } } // To display it on top of the search box below
             />
-        </div>
-        <div className={ 'justify-self-start flex' }>
-            <Calculator query={ query } hasCalculation={ hasCalculation } setHasCalculation={ setHasCalculation }/>
         </div>
     </>
 }
