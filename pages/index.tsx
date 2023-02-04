@@ -1,17 +1,32 @@
 import Head from 'next/head'
 import { useState, useEffect } from 'react'
-import { Socket } from 'socket.io-client'
 import SearchInput from '../components/elements/searchInput'
 import _axios from 'axios'
 import { useRouter } from 'next/router'
 
 const axios = _axios.create({})
 
+let intervalId: NodeJS.Timeout
+
 function Home() {
+    const router = useRouter()
     const [ query, setQuery ] = useState('')
     const [ backgroundUrl, setBackgroundUrl ] = useState('')
-    const router = useRouter()
+    let [ currentTime, changeTime ] = useState('')
 
+
+    useEffect(() => {
+        if (intervalId) clearInterval(intervalId)
+
+        function checkTime() {
+            const time = new Date().toLocaleTimeString()
+            changeTime(time)
+        }
+
+        if (currentTime === '') checkTime()
+
+        intervalId = setInterval(checkTime, 1000)
+    }, [ currentTime ])
 
     useEffect(() => {
         console.log('useEffect main')
@@ -43,7 +58,7 @@ function Home() {
                         <div className="grid grid-cols-6 gap-4">
                             <div className=" col-start-2 col-span-4 ">
                                 <p className={ 'text-center text-9xl text-white font-bold' }
-                                   style={ { textShadow: '1px 1px 3px rgb(0 0 0 / 29%), 2px 4px 7px rgb(73 64 125 / 35%)' } }>19:11</p>
+                                   style={ { textShadow: '1px 1px 3px rgb(0 0 0 / 29%), 2px 4px 7px rgb(73 64 125 / 35%)' } }>{ currentTime }</p>
                                 <div className="divider"></div>
                                 <SearchInput query={ query } launchSearch={ launchSearch }/>
                                 {/*<button className="btn" onClick={ handleClick }>Go</button>*/ }
