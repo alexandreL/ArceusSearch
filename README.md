@@ -26,7 +26,7 @@ _It is a work in progress, and my first Project with NextJS. I'm still learning 
 - [ ] fav like [nightTab](https://github.com/zombieFox/nightTab) The best new tab extension
 - [ ] add a button to change to light theme
 - [ ] ctrl +k for focus on search bar
-- [ ] better image from unsplash.com for the main page
+- [x] better image from unsplash.com for the main page
 - [ ] sexy favicon
 - [ ] maybe implement wolframalpha.com
 - [ ] maybe implement duckduckgo.com

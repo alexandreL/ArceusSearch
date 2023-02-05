@@ -20,12 +20,19 @@ class DynamicBackground {
     }
 
     async loadNewImage() {
-        const result = await axios.get('https://www.bing.com/HPImageArchive.aspx?format=js&idx=0&n=1&mkt=fr-FR')
-        const imageUrl = 'https://www.bing.com' + result.data.images[0].url
+        const result = await axios.get('https://api.unsplash.com/photos/random', {
+            params: {
+                client_id: process.env.UNSPLASH_ACCESS_KEY,
+                orientation: 'landscape',
+                topics: 'nature,landscape,city,travel,food,architecture,technology,science,interiors,wallpaper,background,arts-culture,people,street-photography',
+            },
+            headers: { 'Accept-Encoding': 'gzip,deflate,compress' },
+
+        })
+        const imageUrl = result.data.urls.full
         const result2 = await axios.get(imageUrl, { responseType: 'arraybuffer' })
         const image = Buffer.from(result2.data, 'binary').toString('base64')
         this.lastImageData = `data:${ result2.headers['content-type'] };base64,${ image }`
-        console.log('New image loaded', imageUrl)
     }
 
     getBackground = () => {
