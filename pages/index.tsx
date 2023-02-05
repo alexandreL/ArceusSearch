@@ -57,8 +57,17 @@ function Home() {
                     <div className="">
                         <div className="grid grid-cols-6 gap-4">
                             <div className=" col-start-2 col-span-4 ">
-                                <p className={ 'text-center text-9xl text-white font-bold' }
-                                   style={ { textShadow: '1px 1px 3px rgb(0 0 0 / 29%), 2px 4px 7px rgb(73 64 125 / 35%)' } }>{ currentTime }</p>
+                                <div className="text-center">
+                                    <span className=" text-9xl text-white font-mono font-bold countdown"
+                                          style={ { textShadow: '1px 1px 3px rgb(0 0 0 / 29%), 2px 4px 7px rgb(73 64 125 / 35%)' } }>
+                                        { /* @ts-ignore */ }
+                                        <span style={ { '--value': parseInt(currentTime.split(':')[0]) } }></span>:
+                                        { /* @ts-ignore */ }
+                                        <span style={ { '--value': parseInt(currentTime.split(':')[1]) } }></span>:
+                                        { /* @ts-ignore */ }
+                                        <span style={ { '--value': parseInt(currentTime.split(':')[2]) } }></span>
+                                    </span>
+                                </div>
                                 <div className="divider"></div>
                                 <SearchInput query={ query } launchSearch={ launchSearch }/>
                                 {/*<button className="btn" onClick={ handleClick }>Go</button>*/ }
