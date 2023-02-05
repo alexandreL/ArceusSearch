@@ -126,6 +126,41 @@ const getGoogleOrganicData = async (query: string) => {
     }
 }
 
+const getGoogleImagesData = async (query: string) => {
+    console.log('getGoogleImagesData', query)
+
+    try {
+        const result = await axios.get('https://www.googleapis.com/customsearch/v1', {
+            params: {
+                key: process.env.GOOGLE_API_KEY,
+                cx: process.env.GOOGLE_SEARCH_ENGINE_ID,
+                q: query,
+                num: 10,
+                safe: 'off',
+                searchType: 'image',
+                gl: 'fr',
+                hl: 'fr',
+            }
+        })
+        const googleResult: Array<SearchDetail> = []
+        console.log(result.data.items)
+        for (const item of result.data.items) {
+            googleResult.push({
+                title: item.title,
+                description: item.snippet,
+                url: item.link,
+                displayUrl: item.formattedUrl,
+                thumbnail: item.image.thumbnailLink
+            })
+        }
+        return googleResult
+    } catch (e) {
+        console.error('Error getGoogleImagesData')
+        handleAxiosError(e)
+        return []
+    }
+}
+
 async function getTwitterData(query: string) {
     try {
         const result = await axios.get('https://api.twitter.com/2/tweets/search/recent', {
@@ -163,6 +198,7 @@ async function getTwitterData(query: string) {
 }
 
 const memoizedGetGoogleOrganicData = memoize(getGoogleOrganicData, { timeout: 1000 * 60 * 60 * 12 }) // 12 hours
+const memoizedGetGoogleImagesData = memoize(getGoogleImagesData, { timeout: 1000 * 60 * 60 * 12 }) // 12 hours
 const memoizedGetTwitterData = memoize(getTwitterData, { timeout: 1000 * 60 }) // 1 minute
 const memoizedGetNewsData = memoize(getNewsData, { timeout: 1000 * 60 * 60 }) // 1 hour
 const memoizedGetWikipediaData = memoize(getWikipediaData, { timeout: 1000 * 60 * 60 * 24 }) // 24 hours
@@ -177,7 +213,7 @@ export default async function handler(
     }
     if (typeof query !== 'string') {
         console.log('Query is not a string')
-        return res.status(400).json({ search: [], social: [], actuality: [] })
+        return res.status(400).json({ search: [], social: [], actuality: [], images: [] })
     }
     try {
         const results: Array<Promise<Array<SearchDetail | SocialDetail> | SearchDetail | undefined>> = [
@@ -185,17 +221,19 @@ export default async function handler(
             memoizedGetTwitterData(query),
             memoizedGetNewsData(query),
             memoizedGetWikipediaData(query),
+            memoizedGetGoogleImagesData(query)
         ]
         const rawResults = await Promise.all(results)
-        const formattedResults = {
+        const formattedResults: SearchResults = {
             search: rawResults[0] as Array<SearchDetail>,
             social: rawResults[1] as Array<SocialDetail>,
             actuality: rawResults[2] as Array<ActualityDetail>,
-            wiki: rawResults[3] as SearchDetail
+            wiki: rawResults[3] as SearchDetail,
+            images: rawResults[4] as Array<SearchDetail>
         }
         res.status(200).json(formattedResults)
     } catch (e) {
         console.error(e)
-        res.status(500).json({ search: [], social: [], actuality: [] })
+        res.status(500).json({ search: [], social: [], actuality: [], images: [] })
     }
 }

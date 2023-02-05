@@ -5,13 +5,17 @@ export interface DynamicHeaderProps {
     query?: string
     wikiAnswer: SearchDetail | null
     mathAnswer: string | null
-    images: string[]
+    images: SearchDetail[]
     continueSearch: () => void
 }
 
 export default function DynamicHeader(props: DynamicHeaderProps) {
     const { gptAnswer, query, wikiAnswer, mathAnswer, images, continueSearch } = props
 
+    const devider = images.length / 3
+    const imageColumn1 = images.slice(0, devider)
+    const imageColumn2 = images.slice(devider, devider * 2)
+    const imageColumn3 = images.slice(devider * 2, devider * 3)
 
     return (
         <>
@@ -45,10 +49,34 @@ export default function DynamicHeader(props: DynamicHeaderProps) {
                     </div>
                 }
                 {
-                    images && images.length > 0 && <div className="carousel rounded-box basis-1/3">
-                        <div className="carousel-item">
-                            { images.map((image, index) => {
-                                return (<img src={ image } key={ image } alt="Burger"/>)
+                    images && images.length > 0 && <div className="min-h-12 card bg-neutral-focus m-1 basis-1/3">
+                        <div className="carousel carousel-center">
+                            { imageColumn1.map((image, index) => {
+                                return (<div className="carousel-item" key={ index }>
+                                    <a href={ image.url }>
+                                        <img src={ image.thumbnail } alt="Burger"/>
+                                    </a>
+                                </div>)
+                            })
+                            }
+                        </div>
+                        <div className="carousel carousel-center">
+                            { imageColumn2.map((image, index) => {
+                                return (<div className="carousel-item" key={ index }>
+                                    <a href={ image.url }>
+                                        <img src={ image.thumbnail } alt="Burger"/>
+                                    </a>
+                                </div>)
+                            })
+                            }
+                        </div>
+                        <div className="carousel carousel-center">
+                            { imageColumn3.map((image, index) => {
+                                return (<div className="carousel-item" key={ index }>
+                                    <a href={ image.url }>
+                                        <img src={ image.thumbnail } alt="Burger"/>
+                                    </a>
+                                </div>)
                             })
                             }
                         </div>
@@ -57,9 +85,6 @@ export default function DynamicHeader(props: DynamicHeaderProps) {
                 }
 
             </div>
-            {/*
-
-*/ }
         </>
     )
 }

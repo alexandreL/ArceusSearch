@@ -33,7 +33,7 @@ export interface SearchResults {
     actuality: Array<ActualityDetail>
     math?: string
     wiki?: SearchDetail
-    images?: Array<string>
+    images: Array<SearchDetail>
 }
 
 export interface Suggestion {
