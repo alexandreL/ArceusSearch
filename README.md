@@ -21,7 +21,7 @@ _It is a work in progress, and my first Project with NextJS. I'm still learning 
 - [x] Simple backend cache for google search with cooldown
 - [x] Simple backend cache for news and twitter search with a shorter cooldown
 - [ ] Implement bang support like DuckDuckGo
-- [ ] Add result of wikipedia if exact match
+- [x] Add result of wikipedia if exact match
 - [ ] Add pertinent images
 - [ ] fav like [nightTab](https://github.com/zombieFox/nightTab) The best new tab extension
 - [ ] add a button to change to light theme

@@ -9,6 +9,7 @@ import { SearchResults, SearchDetail, SocialDetail, ActualityDetail } from '../.
 import { NextPageContext } from 'next'
 import { server_url } from '../../utils/config'
 import { io, Socket } from 'socket.io-client'
+import DynamicHeader from '../../components/elements/dynamicHeader'
 
 export interface SearchPageProps {
     results: SearchResults
@@ -21,11 +22,15 @@ function SearchPage(props: SearchPageProps) {
     let { q } = router.query
     if (Array.isArray(q)) q = q[0]
     const [ query, setQuery ] = useState(q || '')
-    const [ answer, setAnswer ] = useState('')
     const [ lastQuery, setLastQuery ] = useState(query)
     const [ searchResult, setSearchResult ] = useState<Array<SearchDetail>>(props.results?.search || [])
     const [ socialResult, setSocialResult ] = useState<Array<SocialDetail>>(props.results?.social || [])
     const [ actualityResult, setActualityResult ] = useState<Array<ActualityDetail>>(props.results?.actuality || [])
+
+    const [ gptAnswer, setGptAnswer ] = useState('')
+    const [ wikiAnswer, setWikiAnswer ] = useState(props.results?.wiki || null)
+    const [ mathAnswer, setMathAnswer ] = useState(props.results?.math || null)
+    const [ images, setImages ] = useState(props.results?.images || [])
 
     const [ isLoaded, setIsLoaded ] = useState(false)
     console.log('query', query)
@@ -36,20 +41,44 @@ function SearchPage(props: SearchPageProps) {
         socket.emit('query-submit-continue', query)
     }
 
-    const getResults = () => {
+    const socketInitializer = async () => {
+        if (socket) return
+        await fetch('/api/socket')
+        socket = io()
+
+        socket.on('connect', () => {
+            socket?.emit('query-submit', query)
+        })
+        socket.on('openai-response', (data: string) => {
+            setGptAnswer(data)
+        })
+    }
+
+    useEffect(() => {
+        socketInitializer().catch(e => console.error(e))
+    }, [])
+
+    useEffect(() => {
         if (query && query !== lastQuery) {
             console.log('getResults')
             setIsLoaded(true)
             setLastQuery(query)
-            setAnswer('')
+            setGptAnswer('')
             setSearchResult([])
             setSocialResult([])
             setActualityResult([])
+            setWikiAnswer(null)
+            setMathAnswer(null)
+            setImages([])
             socket?.emit('query-submit', query)
-            fetch('/api/search?query=' + query).then(res => res.json()).then(data => {
+            fetch('/api/search?query=' + query).then(res => res.json()).then((data: SearchResults) => {
                 setSearchResult(data.search)
                 setSocialResult(data.social)
                 setActualityResult(data.actuality)
+                console.log(data.wiki)
+                if (data.wiki) setWikiAnswer(data.wiki)
+                if (data.math) setMathAnswer(data.math)
+                if (data.images) setImages(data.images)
                 router.push('/search?q=' + query, undefined, { shallow: true })
                 setIsLoaded(false)
             }).catch(err => console.error(err))
@@ -59,28 +88,7 @@ function SearchPage(props: SearchPageProps) {
             if (socket) // first load page most of the time
                 socket?.emit('query-submit', query)
         }
-    }
-
-
-    const socketInitializer = async () => {
-        if (socket) return
-        await fetch('/api/socket')
-        socket = io()
-
-        socket.on('connect', () => {
-        })
-        socket.on('openai-response', (data: string) => {
-            setAnswer(data)
-        })
-    }
-
-    useEffect(() => {
-        socketInitializer().catch(e => console.error(e))
-    }, [])
-
-    useEffect(() => {
-        getResults()
-    }, [ query ])
+    }, [ query, lastQuery, router ])
 
     const launchSearch = (q: string) => {
         setQuery(q)
@@ -98,16 +106,7 @@ function SearchPage(props: SearchPageProps) {
                     <SearchInput query={ query } launchSearch={ launchSearch }/>
                 </div>
                 { isLoaded && <progress className="progress progress-primary"></progress> }
-                { answer && <div className="min-h-12 card bg-neutral m-4">
-                    <div className="card-body">
-                        <h2 className="card-title">gpt answer</h2>
-                        <p className={ 'card-text whitespace-pre-wrap' }>{ answer }</p>
-                        <div className={ 'card-actions justify-start ' }>
-                            <button className={ 'btn btn-primary ' } onClick={ () => continueSearch() }>Continue</button>
-                        </div>
-                    </div>
-                </div>
-                }
+                <DynamicHeader gptAnswer={ gptAnswer } wikiAnswer={ wikiAnswer } mathAnswer={ mathAnswer } images={ images } continueSearch={ continueSearch }/>
                 <div className="flex flex-col w-full lg:flex-row pt-6">
                     <div className="flex-initial lg:w-1/2 md:w-full">
                         <h2 className="text-2xl font-bold pl-2">Search results</h2>

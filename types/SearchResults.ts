@@ -31,6 +31,9 @@ export interface SearchResults {
     search: Array<SearchDetail>
     social: Array<SocialDetail>
     actuality: Array<ActualityDetail>
+    math?: string
+    wiki?: SearchDetail
+    images?: Array<string>
 }
 
 export interface Suggestion {

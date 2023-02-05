@@ -25,7 +25,6 @@ const SocketHandler = (req: any, res: any) => {
             })
             let previousMessage = ''
             socket.on('query-submit', async (msg: string) => {
-                console.log('Message-query: ' + msg)
                 try {
                     const response = await openai.createCompletion({
                         model,
@@ -37,17 +36,16 @@ const SocketHandler = (req: any, res: any) => {
                         presence_penalty: 0,
                     })
                     let answer: string = response.data.choices[0].text!
-                    console.log('Message-response: ', answer)
                     answer = answer.replace('\n\n', '\n')
                     previousMessage = msg + answer
                     socket.emit('openai-response', previousMessage)
                 } catch (error: any) {
                     console.error('openai error')
                     if (error.response) {
-                        console.log(error.response.status)
-                        console.log(error.response.data)
+                        console.error(error.response.status)
+                        console.error(error.response.data)
                     } else {
-                        console.log(error.message)
+                        error.error(error.message)
                     }
                 }
             })
@@ -63,17 +61,16 @@ const SocketHandler = (req: any, res: any) => {
                         presence_penalty: 0,
                     })
                     let answer: string = response.data.choices[0].text!
-                    console.log('Message-response: ', answer)
                     answer = answer.replace('\n\n', '\n')
                     previousMessage += answer
                     socket.emit('openai-response', previousMessage)
                 } catch (error: any) {
                     console.error('openai error')
                     if (error.response) {
-                        console.log(error.response.status)
-                        console.log(error.response.data)
+                        console.error(error.response.status)
+                        console.error(error.response.data)
                     } else {
-                        console.log(error.message)
+                        console.error(error.message)
                     }
                 }
 

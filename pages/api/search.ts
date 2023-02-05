@@ -57,6 +57,36 @@ const getNewsData = async (query: string) => {
     }
 }
 
+const getWikipediaData = async (query: string): Promise<SearchDetail | undefined> => {
+    try {
+        const result = await axios.get('https://fr.wikipedia.org/w/api.php', {
+            params: {
+                action: 'query',
+                format: 'json',
+                prop: 'extracts',
+                titles: query,
+                formatversion: 2,
+                exchars: 256,
+                explaintext: 1,
+                exsectionformat: 'plain',
+            }
+        })
+
+        if (result.data.query.pages[0].missing) {
+            return
+        }
+        return {
+            title: result.data.query.pages[0].title,
+            description: result.data.query.pages[0].extract,
+            url: `https://fr.wikipedia.org/wiki/${ encodeURIComponent(query) }`,
+        }
+    } catch (e) {
+        console.error('Error getWikipediaData')
+        handleAxiosError(e)
+        return
+    }
+}
+
 const getGoogleOrganicData = async (query: string) => {
     console.log('getGoogleOrganicData', query)
 
@@ -135,6 +165,7 @@ async function getTwitterData(query: string) {
 const memoizedGetGoogleOrganicData = memoize(getGoogleOrganicData, { timeout: 1000 * 60 * 60 * 12 }) // 12 hours
 const memoizedGetTwitterData = memoize(getTwitterData, { timeout: 1000 * 60 }) // 1 minute
 const memoizedGetNewsData = memoize(getNewsData, { timeout: 1000 * 60 * 60 }) // 1 hour
+const memoizedGetWikipediaData = memoize(getWikipediaData, { timeout: 1000 * 60 * 60 * 24 }) // 24 hours
 
 export default async function handler(
     req: NextApiRequest,
@@ -149,16 +180,18 @@ export default async function handler(
         return res.status(400).json({ search: [], social: [], actuality: [] })
     }
     try {
-        const results: Array<Promise<Array<SearchDetail | SocialDetail>>> = [
+        const results: Array<Promise<Array<SearchDetail | SocialDetail> | SearchDetail | undefined>> = [
             memoizedGetGoogleOrganicData(query),
             memoizedGetTwitterData(query),
             memoizedGetNewsData(query),
+            memoizedGetWikipediaData(query),
         ]
         const rawResults = await Promise.all(results)
         const formattedResults = {
             search: rawResults[0] as Array<SearchDetail>,
             social: rawResults[1] as Array<SocialDetail>,
             actuality: rawResults[2] as Array<ActualityDetail>,
+            wiki: rawResults[3] as SearchDetail
         }
         res.status(200).json(formattedResults)
     } catch (e) {

@@ -21,7 +21,7 @@ export default function SearchInput(props: SearchInputProps) {
 
     const handleOnSearch = (q: string, results: Array<Suggestion>) => {
 
-        if (q == lastQuery) {
+        if (q == lastQuery && q.length > 1) {
             return launchSearch(q)
         }
 
@@ -51,6 +51,10 @@ export default function SearchInput(props: SearchInputProps) {
         if (socket) return
         await fetch('/api/socket')
         socket = io()
+
+        socket.on('connect', () => {
+            console.log('connected input')
+        })
 
         socket.on('ac', (data: string[]) => {
             setAutoSuggest(data.map((item: string, index: number) => ({ id: index, name: item })))
