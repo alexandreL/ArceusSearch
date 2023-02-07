@@ -59,6 +59,7 @@ function SearchPage(props: SearchPageProps) {
     }, [])
 
     useEffect(() => {
+        if (isLoaded) return
         if (query && query !== lastQuery) {
             console.log('getResults')
             setIsLoaded(true)
@@ -85,10 +86,12 @@ function SearchPage(props: SearchPageProps) {
         } else {
             if (!query) console.log('no query')
             if (query === lastQuery) console.log('same query')
-            if (socket) // first load page most of the time
+            if (socket) { // first load page most of the time
+                console.log('ask gpt')
                 socket?.emit('query-submit', query)
+            }
         }
-    }, [ query, lastQuery, router ])
+    }, [ query, router ])
 
     const launchSearch = (q: string) => {
         setQuery(q)
