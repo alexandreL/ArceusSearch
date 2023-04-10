@@ -4,18 +4,16 @@ import SearchResult from '../../components/elements/searchResult'
 import ActualityResult from '../../components/elements/actualityResult'
 import SocialResult from '../../components/elements/socialResult'
 import { useRouter } from 'next/router'
-import { useState, useEffect } from 'react'
-import { SearchResults, SearchDetail, SocialDetail, ActualityDetail } from '../../types/SearchResults'
+import { useEffect, useState } from 'react'
+import { ActualityDetail, SearchDetail, SearchResults, SocialDetail } from '../../types/SearchResults'
 import { NextPageContext } from 'next'
 import { server_url } from '../../utils/config'
-import { io, Socket } from 'socket.io-client'
 import DynamicHeader from '../../components/elements/dynamicHeader'
+import { socket } from '../../components/utils/socket'
 
 export interface SearchPageProps {
     results: SearchResults
 }
-
-let socket: Socket<any>
 
 function SearchPage(props: SearchPageProps) {
     const router = useRouter()
@@ -33,30 +31,30 @@ function SearchPage(props: SearchPageProps) {
     const [ images, setImages ] = useState(props.results?.images || [])
 
     const [ isLoaded, setIsLoaded ] = useState(false)
-    console.log('query', query)
-    console.log('lastQuery', lastQuery)
-
+    const [ isGPTLoaded, setIsGPTLoaded ] = useState(false)
     // gpt
     const continueSearch = () => {
-        socket.emit('query-submit-continue', query)
+        socket.emit('query-submit-continue')
     }
 
-    const socketInitializer = async () => {
-        if (socket) return
-        await fetch('/api/socket')
-        socket = io()
-
+    useEffect(() => {
+        if (!socket || !socket.connected) {
+            return
+        }
         socket.on('connect', () => {
             socket?.emit('query-submit', query)
         })
         socket.on('openai-response', (data: string) => {
             setGptAnswer(data)
+            setIsGPTLoaded(false)
         })
-    }
 
-    useEffect(() => {
-        socketInitializer().catch(e => console.error(e))
+        return () => {
+            socket.off('connect')
+            socket.off('openai-response')
+        }
     }, [])
+
 
     useEffect(() => {
         if (isLoaded) return
@@ -86,12 +84,13 @@ function SearchPage(props: SearchPageProps) {
         } else {
             if (!query) console.log('no query')
             if (query === lastQuery) console.log('same query')
-            if (socket) { // first load page most of the time
+            if (!isGPTLoaded && socket && socket.connected) { // first load page most of the time
                 console.log('ask gpt')
                 socket?.emit('query-submit', query)
+                if (!isGPTLoaded) setIsGPTLoaded(true)
             }
         }
-    }, [ query, router ])
+    }, [ query ])
 
     const launchSearch = (q: string) => {
         setQuery(q)
@@ -105,11 +104,13 @@ function SearchPage(props: SearchPageProps) {
                 <link rel="icon" href="/favicon.ico"/>
             </Head>
             <main className="">
-                <div className="grid grid-cols-6 gap-4 gap-y-4 bg-neutral">
+                <div
+                    className="grid grid-cols-6 gap-4 gap-y-4 bg-neutral">
                     <SearchInput query={ query } launchSearch={ launchSearch }/>
                 </div>
                 { isLoaded && <progress className="progress progress-primary"></progress> }
-                <DynamicHeader gptAnswer={ gptAnswer } wikiAnswer={ wikiAnswer } mathAnswer={ mathAnswer } images={ images } continueSearch={ continueSearch }/>
+                <DynamicHeader gptAnswer={ gptAnswer } wikiAnswer={ wikiAnswer } mathAnswer={ mathAnswer }
+                               images={ images } continueSearch={ continueSearch }/>
                 <div className="flex flex-col w-full lg:flex-row pt-6">
                     <div className="flex-initial lg:w-1/2 md:w-full">
                         <h2 className="text-2xl font-bold pl-2">Search results</h2>
