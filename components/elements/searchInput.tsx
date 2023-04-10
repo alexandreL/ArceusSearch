@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react'
-import { ReactSearchAutocomplete } from 'react-search-autocomplete'
 import { Suggestion } from '../../types/SearchResults'
 // @ts-ignore
 import daisyuiColors from 'daisyui/src/colors'
 import { Socket, io } from 'socket.io-client'
+import { Combobox } from '@headlessui/react'
 
 
 export interface SearchInputProps {
@@ -67,7 +67,7 @@ export default function SearchInput(props: SearchInputProps) {
 
     return <>
         <div className=" col-start-2 col-span-4 my-2">
-            <ReactSearchAutocomplete<Suggestion>
+            <Combobox<Suggestion>
                 items={ autoSuggest }
                 onSearch={ handleOnSearch }
                 onHover={ handleOnHover }
