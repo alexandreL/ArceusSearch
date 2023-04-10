@@ -1,5 +1,5 @@
 import Head from 'next/head'
-import { useState, useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import SearchInput from '../components/elements/searchInput'
 import _axios from 'axios'
 import { useRouter } from 'next/router'
@@ -12,15 +12,20 @@ function Home() {
     const router = useRouter()
     const [ query, setQuery ] = useState('')
     const [ backgroundUrl, setBackgroundUrl ] = useState('')
-    let [ currentTime, changeTime ] = useState('')
+    let [ currentTime, changeTime ] = useState(new Date().toLocaleTimeString([], {
+        hour: '2-digit',
+        minute: '2-digit',
+        hourCycle: 'h24'
+    }))
 
 
     useEffect(() => {
         if (intervalId) clearInterval(intervalId)
 
         function checkTime() {
-            const time = new Date().toLocaleTimeString()
-            changeTime(time)
+            const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hourCycle: 'h24' })
+            if (time !== currentTime)
+                changeTime(time)
         }
 
         if (currentTime === '') checkTime()
@@ -63,9 +68,7 @@ function Home() {
                                         { /* @ts-ignore */ }
                                         <span style={ { '--value': parseInt(currentTime.split(':')[0]) } }></span>:
                                         { /* @ts-ignore */ }
-                                        <span style={ { '--value': parseInt(currentTime.split(':')[1]) } }></span>:
-                                        { /* @ts-ignore */ }
-                                        <span style={ { '--value': parseInt(currentTime.split(':')[2]) } }></span>
+                                        <span style={ { '--value': parseInt(currentTime.split(':')[1]) } }></span>
                                     </span>
                                 </div>
                                 <div className="divider"></div>

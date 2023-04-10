@@ -1,6 +1,7 @@
 import { Server } from 'socket.io'
 import { Configuration, OpenAIApi } from 'openai'
 import axios from 'axios'
+import { ClientToServerEvents, ServerToClientEvents } from '../../types/socket'
 
 const configuration = new Configuration({
     apiKey: process.env.OPENAI_API_KEY,
@@ -14,14 +15,14 @@ const SocketHandler = (req: any, res: any) => {
         console.log('Socket is already running')
     } else {
         console.log('Socket is initializing')
-        const io = new Server(res.socket.server)
+        const io = new Server<ClientToServerEvents, ServerToClientEvents>(res.socket.server)
         res.socket.server.io = io
         io.on('connection', (socket: any) => {
             console.log('Socket connected')
             const openai = new OpenAIApi(configuration)
-            socket.on('query-input-change', async (msg: string) => {
-                const ac = await axios.get('https://ac.duckduckgo.com/ac/?q=' + msg)
-                socket.emit('ac', ac.data.map((item: any) => item.phrase))
+            socket.on('query-input-change', async (data: { msg: string, transaction: number }) => {
+                const ac = await axios.get('https://ac.duckduckgo.com/ac/?q=' + data.msg)
+                socket.emit('ac', { items: ac.data.map((item: any) => item.phrase), transaction: data.transaction })
             })
             let previousMessage = ''
             socket.on('query-submit', async (msg: string) => {
