@@ -93,7 +93,7 @@ export default function SearchInput(props: SearchInputProps) {
                 onChange={ handleOnBase }
             >
                 <Combobox.Input
-                    className="input input-bordered input-primary w-full"
+                    className="input input-bordered input-primary w-full rounded-full"
                     placeholder="Search"
                     value={ lastQuery }
                     onChange={ (event) => handleOnChange(event.target.value) }
