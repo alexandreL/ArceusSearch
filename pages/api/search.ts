@@ -173,7 +173,7 @@ async function getTwitterData(query: string) {
                 'authorization': `Bearer ${ process.env.TWITTER_BEARER_TOKEN }`
             }
         })
-        if (result.data.data.length === 0) return []
+        if (result.data?.data?.length === 0) return []
         const twitterResult: Array<SocialDetail> = []
         for (const tweet of result.data.data) {
             const user = result.data.includes.users.find((user: any) => user.id === tweet.author_id)
