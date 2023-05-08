@@ -17,12 +17,14 @@ function Home() {
         minute: '2-digit',
         hourCycle: 'h23'
     }))
+    console.log(currentTime)
 
     useEffect(() => {
         if (intervalId) clearInterval(intervalId)
 
         function checkTime() {
             const time = new Date().toLocaleTimeString('fr', { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' })
+            console.log('checkTime', time)
             if (time !== currentTime)
                 changeTime(time)
         }
