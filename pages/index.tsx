@@ -17,14 +17,12 @@ function Home() {
         minute: '2-digit',
         hourCycle: 'h23'
     }))
-    console.log(currentTime)
 
     useEffect(() => {
         if (intervalId) clearInterval(intervalId)
 
         function checkTime() {
             const time = new Date().toLocaleTimeString('fr', { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' })
-            console.log('checkTime', time)
             if (time !== currentTime)
                 changeTime(time)
         }
@@ -58,6 +56,14 @@ function Home() {
                 <link rel="icon" href="/favicon.ico"/>
             </Head>
             <main className="">
+                <style jsx>{`
+                  .hours {
+                    --value: ${parseInt(currentTime.split(':')[0])};
+                  }
+                    .minutes {
+                    --value: ${parseInt(currentTime.split(':')[1])};
+                    }
+                `}</style>
                 <div className="grid content-center bg-cover min-h-screen"
                      style={ { backgroundImage: `url(${ backgroundUrl })` } }>
                     <div className="">
@@ -66,10 +72,8 @@ function Home() {
                                 <div className="text-center">
                                     <span className=" text-9xl text-white font-mono font-bold countdown"
                                           style={ { textShadow: '1px 1px 3px rgb(0 0 0 / 29%), 2px 4px 7px rgb(73 64 125 / 35%)' } }>
-                                        { /* @ts-ignore */ }
-                                        <span style={ { '--value': parseInt(currentTime.split(':')[0]) } }></span>:
-                                        { /* @ts-ignore */ }
-                                        <span style={ { '--value': parseInt(currentTime.split(':')[1]) } }></span>
+                                        <span className="hours"></span>:
+                                        <span className="minutes"></span>
                                     </span>
                                 </div>
                                 <div className="divider"></div>
