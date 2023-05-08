@@ -3,13 +3,13 @@ import SearchInput from '../../components/elements/searchInput'
 import SearchResult from '../../components/elements/searchResult'
 import ActualityResult from '../../components/elements/actualityResult'
 import SocialResult from '../../components/elements/socialResult'
-import { useRouter } from 'next/router'
-import { useEffect, useState } from 'react'
-import { ActualityDetail, SearchDetail, SearchResults, SocialDetail } from '../../types/SearchResults'
-import { NextPageContext } from 'next'
-import { server_url } from '../../utils/config'
+import {useRouter} from 'next/router'
+import {useEffect, useState} from 'react'
+import {ActualityDetail, SearchDetail, SearchResults, SocialDetail} from '../../types/SearchResults'
+import {NextPageContext} from 'next'
+import {server_url} from '../../utils/config'
 import DynamicHeader from '../../components/elements/dynamicHeader'
-import { socket } from '../../components/utils/socket'
+import {socket} from '../../components/utils/socket'
 
 export interface SearchPageProps {
     results: SearchResults
@@ -17,21 +17,24 @@ export interface SearchPageProps {
 
 function SearchPage(props: SearchPageProps) {
     const router = useRouter()
-    let { q } = router.query
+    let {q} = router.query
     if (Array.isArray(q)) q = q[0]
-    const [ query, setQuery ] = useState(q || '')
-    const [ lastQuery, setLastQuery ] = useState(query)
-    const [ searchResult, setSearchResult ] = useState<Array<SearchDetail>>(props.results?.search || [])
-    const [ socialResult, setSocialResult ] = useState<Array<SocialDetail>>(props.results?.social || [])
-    const [ actualityResult, setActualityResult ] = useState<Array<ActualityDetail>>(props.results?.actuality || [])
+    const [query, setQuery] = useState(q || '')
+    const [lastQuery, setLastQuery] = useState(query)
+    const [searchResult, setSearchResult] = useState<Array<SearchDetail>>(props.results?.search || [])
+    const [socialResult, setSocialResult] = useState<Array<SocialDetail>>(props.results?.social || [])
+    const [actualityResult, setActualityResult] = useState<Array<ActualityDetail>>(props.results?.actuality || [])
 
-    const [ gptAnswer, setGptAnswer ] = useState('')
-    const [ wikiAnswer, setWikiAnswer ] = useState(props.results?.wiki || null)
-    const [ mathAnswer, setMathAnswer ] = useState(props.results?.math || null)
-    const [ images, setImages ] = useState(props.results?.images || [])
+    const [gptAnswer, setGptAnswer] = useState('')
+    const [wikiAnswer, setWikiAnswer] = useState(props.results?.wiki || null)
+    const [mathAnswer, setMathAnswer] = useState(props.results?.math || null)
+    const [images, setImages] = useState(props.results?.images || [])
 
-    const [ isLoaded, setIsLoaded ] = useState(false)
-    const [ isGPTLoaded, setIsGPTLoaded ] = useState(false)
+    const [isLoaded, setIsLoaded] = useState(false)
+    const [isGPTLoaded, setIsGPTLoaded] = useState(false)
+    const [transactionToken, setTransactionToken] = useState(Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15))
+    const [lastTransactionToken, setLastTransactionToken] = useState('')
+
     // gpt
     const continueSearch = () => {
         socket.emit('query-submit-continue')
@@ -42,11 +45,22 @@ function SearchPage(props: SearchPageProps) {
             return
         }
         socket.on('connect', () => {
-            socket?.emit('query-submit', query)
+            socket?.emit('query-submit', {query, transactionToken})
         })
         socket.on('openai-response', (data: string) => {
             setGptAnswer(data)
+            setTransactionToken(Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15))
             setIsGPTLoaded(false)
+        })
+        socket.on('openai-fail', () => {
+            console.log('openai-fail, retrying')
+            const newToken = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15)
+            setTransactionToken(newToken)
+            // wait 1s before retrying
+            setTimeout(() => {
+                socket?.emit('query-submit', {query, transactionToken: newToken})
+            })
+            setIsGPTLoaded(true)
         })
 
         return () => {
@@ -69,8 +83,8 @@ function SearchPage(props: SearchPageProps) {
             setWikiAnswer(null)
             setMathAnswer(null)
             setImages([])
-            socket?.emit('query-submit', query)
-            fetch('/api/search?query=' + query).then(res => res.json()).then((data: SearchResults) => {
+            socket?.emit('query-submit', {query, transactionToken})
+            fetch('/api/search?query=' + query).then(res => res.json()).then(async (data: SearchResults) => {
                 setSearchResult(data.search)
                 setSocialResult(data.social)
                 setActualityResult(data.actuality)
@@ -78,19 +92,20 @@ function SearchPage(props: SearchPageProps) {
                 if (data.wiki) setWikiAnswer(data.wiki)
                 if (data.math) setMathAnswer(data.math)
                 if (data.images) setImages(data.images)
-                router.push('/search?q=' + query, undefined, { shallow: true })
+                await router.push('/search?q=' + query, undefined, {shallow: true})
                 setIsLoaded(false)
             }).catch(err => console.error(err))
         } else {
             if (!query) console.log('no query')
             if (query === lastQuery) console.log('same query')
-            if (!isGPTLoaded && socket && socket.connected) { // first load page most of the time
-                console.log('ask gpt')
-                socket?.emit('query-submit', query)
+            if (lastTransactionToken === transactionToken) console.log('same transaction token')
+            if (!isGPTLoaded && socket && socket.connected && lastTransactionToken !== transactionToken) { // first load page most of the time
                 if (!isGPTLoaded) setIsGPTLoaded(true)
+                console.log('ask gpt')
+                socket?.emit('query-submit', {query, transactionToken})
             }
         }
-    }, [ query ])
+    }, [query])
 
     const launchSearch = (q: string) => {
         setQuery(q)
@@ -106,37 +121,38 @@ function SearchPage(props: SearchPageProps) {
             <main className="">
                 <div
                     className="grid grid-cols-6 gap-4 gap-y-4 bg-neutral">
-                    <SearchInput query={ query } launchSearch={ launchSearch }/>
+                    <SearchInput query={query} launchSearch={launchSearch}/>
                 </div>
-                { isLoaded && <progress className="progress progress-primary"></progress> }
-                <DynamicHeader gptAnswer={ gptAnswer } wikiAnswer={ wikiAnswer } mathAnswer={ mathAnswer }
-                               images={ images } continueSearch={ continueSearch }/>
+                {isLoaded && <progress className="progress progress-primary"></progress>}
+                <DynamicHeader gptAnswer={gptAnswer} wikiAnswer={wikiAnswer} mathAnswer={mathAnswer}
+                               images={images} gptLoaded={isGPTLoaded} query={query}
+                               continueSearch={continueSearch}/>
                 <div className="flex flex-col w-full lg:flex-row pt-6">
                     <div className="flex-initial lg:w-1/2 md:w-full">
                         <h2 className="text-2xl font-bold pl-2">Search results</h2>
-                        { searchResult.map((item, index) => {
+                        {searchResult.map((item, index) => {
                             return (
-                                <SearchResult key={ index }
-                                              data={ item }/>
+                                <SearchResult key={index}
+                                              data={item}/>
                             )
-                        }) }
+                        })}
 
                     </div>
                     <div className="divider divider-horizontal"></div>
                     <div className="flex-initial lg:w-1/2 md:w-full">
-                        <div className={ 'flex flex-col w-full lg:flex-row ' }>
-                            <div className={ 'flex flex-col lg:w-1/2 md:w-full space-y-2' }>
+                        <div className={'flex flex-col w-full lg:flex-row '}>
+                            <div className={'flex flex-col lg:w-1/2 md:w-full space-y-2'}>
                                 <h2 className="text-2xl font-bold pl-2">Actuality results</h2>
-                                { actualityResult.map((item, index) => {
-                                    return (<ActualityResult key={ index } data={ item }/>)
-                                }) }
+                                {actualityResult.map((item, index) => {
+                                    return (<ActualityResult key={index} data={item}/>)
+                                })}
                             </div>
                             <div className="divider divider-horizontal"></div>
-                            <div className={ 'flex flex-col lg:w-1/2 md:w-full space-y-2 ' }>
+                            <div className={'flex flex-col lg:w-1/2 md:w-full space-y-2 '}>
                                 <h2 className="text-2xl font-bold pl-2">Twitter results</h2>
-                                { socialResult.map((item, index) => {
-                                    return (<SocialResult key={ index } data={ item }/>)
-                                }) }
+                                {socialResult.map((item, index) => {
+                                    return (<SocialResult key={index} data={item}/>)
+                                })}
                             </div>
                         </div>
                     </div>
@@ -148,7 +164,7 @@ function SearchPage(props: SearchPageProps) {
 
 SearchPage.getInitialProps = async (context: NextPageContext) => {
     if (context.query?.q) {
-        const res = await fetch(`${ server_url }/api/search?query=${ context.query.q }`)
+        const res = await fetch(`${server_url}/api/search?query=${context.query.q}`)
         const data = await res.json()
         if (!data) {
             return {}

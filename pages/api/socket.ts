@@ -1,14 +1,15 @@
-import { Server } from 'socket.io'
-import { Configuration, OpenAIApi } from 'openai'
+import {Server} from 'socket.io'
+import {Configuration, OpenAIApi} from 'openai'
 import axios from 'axios'
-import { ClientToServerEvents, ServerToClientEvents } from '../../types/socket'
+import {ClientToServerEvents, ServerToClientEvents} from '../../types/socket'
 
 const configuration = new Configuration({
     apiKey: process.env.OPENAI_API_KEY,
 })
 
 // const model = 'text-ada-001'
-const model = 'text-davinci-003'
+const model = 'gpt-3.5-turbo'
+const prompt = `The following is a conversation with an AI assistant. The assistant is helpful, creative, clever.`
 
 const SocketHandler = (req: any, res: any) => {
     if (res.socket?.server.io) {
@@ -22,23 +23,31 @@ const SocketHandler = (req: any, res: any) => {
             const openai = new OpenAIApi(configuration)
             socket.on('query-input-change', async (data: { msg: string, transaction: number }) => {
                 const ac = await axios.get('https://ac.duckduckgo.com/ac/?q=' + data.msg)
-                socket.emit('ac', { items: ac.data.map((item: any) => item.phrase), transaction: data.transaction })
+                socket.emit('ac', {items: ac.data.map((item: any) => item.phrase), transaction: data.transaction})
             })
             let previousMessage = ''
-            socket.on('query-submit', async (msg: string) => {
+            let previewsToken = ''
+            socket.on('query-submit', async (data: { query: string, transactionToken: string }) => {
+                console.log('query-submit', data.query)
+                if (data.transactionToken !== previewsToken) {
+                    previewsToken = data.transactionToken
+                } else {
+                    return
+                }
                 try {
-                    const response = await openai.createCompletion({
+                    const response = await openai.createChatCompletion({
                         model,
-                        prompt: msg,
-                        temperature: 0.1,
-                        max_tokens: 120,
+                        messages: [{role: 'system', content: prompt}, {role: 'user', content: data.query}],
+                        temperature: 0.7,
+                        max_tokens: 256,
                         top_p: 1,
-                        frequency_penalty: 0.5,
+                        frequency_penalty: 0,
                         presence_penalty: 0,
                     })
-                    let answer: string = response.data.choices[0].text!
+                    let answer: string = response.data.choices[0].message!.content!
+                    console.log('answer', answer)
                     answer = answer.replace('\n\n', '\n')
-                    previousMessage = msg + answer
+                    previousMessage = answer
                     socket.emit('openai-response', previousMessage)
                 } catch (error: any) {
                     console.error('openai error')
@@ -48,20 +57,21 @@ const SocketHandler = (req: any, res: any) => {
                     } else {
                         error.error(error.message)
                     }
+                    socket.emit('openai-fail')
                 }
             })
             socket.on('query-submit-continue', async () => {
                 try {
-                    const response = await openai.createCompletion({
+                    const response = await openai.createChatCompletion({
                         model,
-                        prompt: previousMessage,
-                        temperature: 0.1,
-                        max_tokens: 120,
+                        messages: [{role: 'system', content: prompt}, {role: 'user', content: previousMessage}],
+                        temperature: 0.7,
+                        max_tokens: 256,
                         top_p: 1,
-                        frequency_penalty: 0.5,
+                        frequency_penalty: 0,
                         presence_penalty: 0,
                     })
-                    let answer: string = response.data.choices[0].text!
+                    let answer: string = response.data.choices[0].message!.content!
                     answer = answer.replace('\n\n', '\n')
                     previousMessage += answer
                     socket.emit('openai-response', previousMessage)
@@ -80,30 +90,5 @@ const SocketHandler = (req: any, res: any) => {
     }
     res.end()
 }
-/*
-
-import { ChatGPTAPI, getOpenAIAuth } from 'chatgpt'
-
-async function example() {
-    console.log('ChatGPT example')
-    // use puppeteer to bypass cloudflare (headful because of captchas)
-    const openAIAuth = await getOpenAIAuth({
-        email: process.env.OPENAI_EMAIL,
-        password: process.env.OPENAI_PASSWORD
-    })
-    console.log('openAIAuth', openAIAuth)
-
-    const api = new ChatGPTAPI({ ...openAIAuth })
-    await api.initSession()
-
-    // send a message and wait for the response
-    const result = await api.sendMessage('Write a python version of bubble sort.')
-
-    // result.response is a markdown-formatted string
-    console.log(result.response)
-}
-
-example()
-*/
 
 export default SocketHandler

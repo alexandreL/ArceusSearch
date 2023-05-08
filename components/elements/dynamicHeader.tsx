@@ -7,10 +7,11 @@ export interface DynamicHeaderProps {
     mathAnswer: string | null
     images: SearchDetail[]
     continueSearch: () => void
+    gptLoaded: boolean
 }
 
 export default function DynamicHeader(props: DynamicHeaderProps) {
-    const { gptAnswer, query, wikiAnswer, mathAnswer, images, continueSearch } = props
+    const { gptAnswer, query, wikiAnswer, mathAnswer, images, continueSearch, gptLoaded } = props
 
     const devider = images.length / 3
     const imageColumn1 = images.slice(0, devider)
@@ -23,7 +24,9 @@ export default function DynamicHeader(props: DynamicHeaderProps) {
                 <div className="min-h-12 card bg-neutral-focus m-1 basis-1/3">
                     <div className="card-body">
                         <span className="badge badge-accent">GPT answer</span>
+                        <h2 className="card-title">{ query }</h2>
                         <p className={ 'card-text whitespace-pre-wrap' }>{ gptAnswer }</p>
+                        {gptLoaded && <progress className="progress progress-primary"></progress>}
                         <div className={ 'card-actions justify-start ' }>
                             { gptAnswer && (<button className={ 'btn btn-primary ' }
                                                     onClick={ () => continueSearch() }>Continue</button>)

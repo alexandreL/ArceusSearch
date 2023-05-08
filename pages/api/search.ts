@@ -143,7 +143,6 @@ const getGoogleImagesData = async (query: string) => {
             }
         })
         const googleResult: Array<SearchDetail> = []
-        console.log(result.data.items)
         for (const item of result.data.items) {
             googleResult.push({
                 title: item.title,
