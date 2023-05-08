@@ -12,18 +12,17 @@ function Home() {
     const router = useRouter()
     const [ query, setQuery ] = useState('')
     const [ backgroundUrl, setBackgroundUrl ] = useState('')
-    let [ currentTime, changeTime ] = useState(new Date().toLocaleTimeString([], {
+    let [ currentTime, changeTime ] = useState(new Date().toLocaleTimeString('fr', {
         hour: '2-digit',
         minute: '2-digit',
-        hourCycle: 'h24'
+        hourCycle: 'h23'
     }))
-
 
     useEffect(() => {
         if (intervalId) clearInterval(intervalId)
 
         function checkTime() {
-            const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hourCycle: 'h24' })
+            const time = new Date().toLocaleTimeString('fr', { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' })
             if (time !== currentTime)
                 changeTime(time)
         }
